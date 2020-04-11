@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstring>
+
 #include <algorithm>
 #include <memory>
+#include <iterator>
 #include <utility>
 
-#define DEFAULT_SIZE 3
+//#define DEFAULT_SIZE 4
 
 namespace nostd
 {
@@ -15,21 +18,47 @@ class Vector
 public:
     Vector(size_t size)
     {
-        first_ = end_ = allocator_.allocate(size);
-        realEnd_ = first_ + size;
+        if (size != 0)
+        {
+            first_ = end_ = allocator_.allocate(size);
+            realEnd_ = first_ + size;
+        }
     }
 
     Vector() : Vector(DEFAULT_SIZE) {}
 
-    Vector(const Vector<T>& other) = delete;
-    Vector(Vector<T>&& other) = delete;
+    Vector(const Vector<T>& other) : Vector(other.size())
+    {
+        std::copy(other.begin(), other.end(), std::back_inserter(*this));
+    }
+
+    Vector(Vector<T>&& other)
+    {
+        first_ = other.first_;
+        end_ = other.end_;
+        realEnd_ = other.realEnd_;
+
+        other.first_ = other.end_ = other.realEnd_ = nullptr;
+    }
+
     Vector<T>& operator=(const Vector<T>& other) = delete;
-    Vector<T>& operator=(Vector<T>&& other) = delete;
+
+    Vector<T>& operator=(Vector<T>&& other)
+    {
+        destructorOnRange_(first_, end_);
+        allocator_.deallocate(first_, realSize_());
+
+        first_ = other.first_;
+        end_ = other.end_;
+        realEnd_ = other.realEnd_;
+
+        other.first_ = other.end_ = other.realEnd_ = nullptr;
+    }
 
     ~Vector()
     {
         destructorOnRange_(first_, end_);
-        allocator_.deallocate(first_, size());
+        allocator_.deallocate(first_, realSize_());
     }
 
     size_t size() const
@@ -64,6 +93,15 @@ public:
         new(end_) T(std::forward<Args>(args)...);
         end_ += 1;
     }
+
+    T& front() { return *first_; }
+    T& back() { return *(end_ - 1); }
+
+    const T& front() const { return *first_; }
+    const T& back() const { return *(end_ - 1); }
+
+    T& operator[](size_t idx) { return first_[idx]; }
+    const T& operator[](size_t idx) const { return first_[idx]; }
 
     class iterator
     {
@@ -127,50 +165,50 @@ public:
     public:
         using value_type = T;
 
-        const_iterator(T* ptr) : data_(ptr) {}
+        const_iterator(const T* ptr) : data_(ptr) {}
 
-        iterator& operator++()
+        const_iterator& operator++()
         {
             data_++;
             return *this;
         }
 
-        iterator operator++(int)
+        const_iterator operator++(int)
         {
-            iterator ret(data_);
+            const_iterator ret(data_);
             data_++;
             return ret;
         }
 
-        iterator& operator--()
+        const_iterator& operator--()
         {
             data_--;
             return *this;
         }
 
-        iterator operator--(int)
+        const_iterator operator--(int)
         {
-            iterator ret(data_);
+            const_iterator ret(data_);
             data_--;
             return ret;
         }
 
-        T& operator*()
+        const T& operator*()
         {
             return *data_;
         }
 
-        T* operator->()
+        const T* operator->()
         {
             return data_;
         }
 
-        bool operator==(iterator other) const
+        bool operator==(const_iterator other) const
         {
             return data_ == other.data_;
         }
 
-        bool operator!=(iterator other) const
+        bool operator!=(const_iterator other) const
         {
             return data_ != other.data_;
         }
@@ -194,17 +232,27 @@ protected:
 
     void grow_()
     {
-        auto oldSize = size();
-        auto newFirst = allocator_.allocate(oldSize * 2);
+        auto newSize = size() ? 2 * size() : 1;  // to work when vector is empty
+        auto newFirst = allocator_.allocate(newSize);
 
-        std::move(first_, end_, newFirst);
+        size_t i = 0;
+        for (auto& el : *this)
+            new(newFirst + i++) T(std::move(el));
+
         destructorOnRange_(first_, end_);
-        allocator_.deallocate(first_, oldSize);
+        allocator_.deallocate(first_, newSize / 2);
 
         first_ = newFirst;
-        end_ = newFirst + oldSize;
-        realEnd_ = newFirst + oldSize * 2;
+        end_ = newFirst + newSize / 2;
+        realEnd_ = newFirst + newSize;
     }
+
+    size_t realSize_()
+    {
+        return realEnd_ - first_;
+    }
+
+    constexpr static size_t DEFAULT_SIZE = 4;
 
     Allocator allocator_;
     T *first_ = nullptr, *end_ = nullptr, *realEnd_ = nullptr;
@@ -212,4 +260,4 @@ protected:
 
 }  // namespace nostd
 
-#undef DEFAULT_SIZE
+//#undef DEFAULT_SIZE
