@@ -14,18 +14,18 @@ public:
     TestObject(int i) :
         data_(new int(i))
     {
-        std::cout << "TestObject::TestObject(int)" << std::endl;
+        std::cout << "TestObject::TestObject(int = " << i << ")" << std::endl;
     }
 
     TestObject(const TestObject& other) :
         data_(new int(*(other.data_)))
     {
-        std::cout << "TestObject::TestObject(const TestObject&)" << std::endl;
+        std::cout << "TestObject::TestObject(const TestObject& = " << *data_ << ")" << std::endl;
     }
 
     TestObject(TestObject&& other)
     {
-        std::cout << "TestObject::TestObject(TestObject&&)" << std::endl;
+        std::cout << "TestObject::TestObject(TestObject&& = " << *other.data_ << ")" << std::endl;
 
         data_ = other.data_;
         other.data_ = nullptr;
@@ -47,6 +47,24 @@ public:
         }
     }
 
+    TestObject& operator=(const TestObject& other)
+    {
+        std::cout << "TestObject::operator=(const TestObject& = " << *other.data_ << ")" << std::endl;
+
+        *data_ = *other.data_;
+        return *this;
+    }
+
+    TestObject& operator=(TestObject&& other)
+    {
+        std::cout << "TestObject::operator=(TestObject&& = " << *other.data_ << ")" << std::endl;
+
+        delete data_;
+        data_ = other.data_;
+        other.data_ = nullptr;
+        return *this;
+    }
+
     void set(int i)
     {
         *data_ = i;
@@ -62,3 +80,20 @@ inline std::ostream& operator<< (std::ostream& os, const TestObject& obj)
 {
     return os << *(obj.data_);
 }
+
+class TestObjectMultiplies
+{
+public:
+    TestObjectMultiplies(int i)
+    {
+        value *= i;
+    }
+
+    template<typename... Args>
+    TestObjectMultiplies(int i, Args&&... args) : TestObjectMultiplies(args...)
+    {
+        value *= i;
+    }
+
+    int value = 1;
+};

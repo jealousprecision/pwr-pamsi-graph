@@ -12,19 +12,33 @@ void destroy(T* ptr)
 
 int main()
 {
-    nostd::Vector<int> vec(3);
+    nostd::Vector<TestObject> vec(1);
 
-    TestObject* obj = nullptr;
-    //void* memory = malloc(sizeof(std::string));
-    std::allocator<TestObject> allocator;
-    TestObject* memory = allocator.allocate(1);
+    // move object
+    vec.push_back(TestObject(10));
 
-    obj = new(memory) TestObject;
+    // copy object
+    TestObject obj(11);
+    vec.push_back(obj);
+    obj.set(-1);
 
-    std::cout << *obj << std::endl << obj << '\t' << memory << std::endl;
+    // make object at the storage already
+    vec.emplace_back(12);
 
-    obj->set(-15);
+    nostd::Vector<TestObjectMultiplies> vec2;
+    vec2.emplace_back(5, 5);
+    vec2.emplace_back(2, 8);
+    vec2.emplace_back(1, 1, 1, 1, 1, 3);
+    vec2.emplace_back(2, 3, 4, 5, 6);
 
-    destroy(obj);
-    allocator.deallocate(obj, 1);
+
+    std::cout << "vec: ";
+    for (const TestObject& el : vec)
+        std::cout << el << ", ";
+    std::cout << std::endl;
+
+    std::cout << "vec2: ";
+    for (const auto& el : vec2)
+        std::cout << el.value << ", ";
+    std::cout << std::endl;
 }

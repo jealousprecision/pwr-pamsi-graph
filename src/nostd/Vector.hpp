@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
+#include <utility>
 
 #define DEFAULT_SIZE 3
 
@@ -17,13 +19,16 @@ public:
         realEnd_ = first_ + size;
     }
 
+    Vector() : Vector(DEFAULT_SIZE) {}
+
+    Vector(const Vector<T>& other) = delete;
+    Vector(Vector<T>&& other) = delete;
+    Vector<T>& operator=(const Vector<T>& other) = delete;
+    Vector<T>& operator=(Vector<T>&& other) = delete;
+
     ~Vector()
     {
-        for (auto& el : *this)
-        {
-            el.~T();
-        }
-
+        destructorOnRange_(first_, end_);
         allocator_.deallocate(first_, size());
     }
 
@@ -38,6 +43,25 @@ public:
             grow_();
 
         new(end_) T(obj);  // make object in place pointed by end_
+        end_ += 1;
+    }
+
+    void push_back(T&& obj)
+    {
+        if (end_ == realEnd_)
+            grow_();
+
+        new(end_) T(std::move(obj));
+        end_ += 1;
+    }
+
+    template<typename... Args>
+    void emplace_back(Args&&... args)
+    {
+        if (end_ == realEnd_)
+            grow_();
+
+        new(end_) T(std::forward<Args>(args)...);
         end_ += 1;
     }
 
@@ -162,9 +186,24 @@ public:
     const_iterator end() const { return const_iterator(end_); }
 
 protected:
+    void destructorOnRange_(T* first, T* end)
+    {
+        for (; first != end; ++first)
+            first->~T();
+    }
+
     void grow_()
     {
-        //TODO!
+        auto oldSize = size();
+        auto newFirst = allocator_.allocate(oldSize * 2);
+
+        std::move(first_, end_, newFirst);
+        destructorOnRange_(first_, end_);
+        allocator_.deallocate(first_, oldSize);
+
+        first_ = newFirst;
+        end_ = newFirst + oldSize;
+        realEnd_ = newFirst + oldSize * 2;
     }
 
     Allocator allocator_;
