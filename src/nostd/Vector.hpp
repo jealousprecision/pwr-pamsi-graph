@@ -7,8 +7,6 @@
 #include <iterator>
 #include <utility>
 
-//#define DEFAULT_SIZE 4
-
 namespace nostd
 {
 
@@ -116,24 +114,10 @@ public:
             return *this;
         }
 
-        iterator operator++(int)
-        {
-            iterator ret(data_);
-            data_++;
-            return ret;
-        }
-
         iterator& operator--()
         {
             data_--;
             return *this;
-        }
-
-        iterator operator--(int)
-        {
-            iterator ret(data_);
-            data_--;
-            return ret;
         }
 
         T& operator*()
@@ -173,24 +157,10 @@ public:
             return *this;
         }
 
-        const_iterator operator++(int)
-        {
-            const_iterator ret(data_);
-            data_++;
-            return ret;
-        }
-
         const_iterator& operator--()
         {
             data_--;
             return *this;
-        }
-
-        const_iterator operator--(int)
-        {
-            const_iterator ret(data_);
-            data_--;
-            return ret;
         }
 
         const T& operator*()
@@ -232,22 +202,24 @@ protected:
 
     void grow_()
     {
-        auto newSize = size() ? 2 * size() : 1;  // to work when vector is empty
+        auto oldRealSize = realSize_();
+        auto oldSize = size();
+
+        auto newSize = oldSize ? 2 * oldSize : 1;  // to work when vector is empty
         auto newFirst = allocator_.allocate(newSize);
 
-        size_t i = 0;
-        for (auto& el : *this)
-            new(newFirst + i++) T(std::move(el));
+        for (size_t i = 0; i < oldSize; ++i)
+            new(newFirst + i) T(std::move(first_[i]));
 
         destructorOnRange_(first_, end_);
-        allocator_.deallocate(first_, newSize / 2);
+        allocator_.deallocate(first_, oldRealSize);
 
         first_ = newFirst;
-        end_ = newFirst + newSize / 2;
+        end_ = newFirst + oldSize;
         realEnd_ = newFirst + newSize;
     }
 
-    size_t realSize_()
+    size_t realSize_() const
     {
         return realEnd_ - first_;
     }
@@ -259,5 +231,3 @@ protected:
 };
 
 }  // namespace nostd
-
-//#undef DEFAULT_SIZE
