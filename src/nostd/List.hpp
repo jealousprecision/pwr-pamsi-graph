@@ -2,13 +2,19 @@
 
 #include <cstddef>
 #include <iterator>
+#include <optional>
 
 #define iterator_impl(iterator_name)\
 \
+    using difference_type = ptrdiff_t;\
     using iterator_category = std::bidirectional_iterator_tag;\
 \
-    iterator_name& operator++(){ data_++; return *this; }\
-    iterator_name& operator--(){ data_--; return *this; }\
+    friend List<T>;\
+\
+    iterator_name& operator++(){ data_ = data_->next; return *this; }\
+    iterator_name  operator++(int){ iterator_name temp(data_); data_ = data_->next; return temp;}\
+    iterator_name& operator--(){ data_ = data_->previous; return *this; }\
+    iterator_name  operator--(int){ iterator_name temp(data_); data_ = data_->previous; return temp;}\
 \
     bool operator==(iterator_name other) const { return data_ == other.data_; }\
     bool operator!=(iterator_name other) const { return data_ != other.data_; }
@@ -35,25 +41,25 @@ public:
     {
         Node* next = nullptr;
         Node* previous = nullptr;
-        T* obj = nullptr;
+        std::optional<T> obj = std::nullopt;
     };
 
     void push_back(const T& obj)
     {
-        end_->obj = new T(obj);
+        end_->obj.emplace(obj);
         advanceEndNode_();
     }
 
     void push_back(T&& obj)
     {
-        end_->obj = new T(std::move(obj));
+        end_->obj.emplace(std::move(obj));
         advanceEndNode_();
     }
 
     template<typename... Args>
     void emplace_back(Args&&... args)
     {
-        end_->obj = new T(std::forward<Args>(args)...);
+        end_->obj.emplace(std::forward<Args>(args)...);
         advanceEndNode_();
     }
 
@@ -76,19 +82,17 @@ public:
         using pointer = T*;
         using reference = T&;
 
-        friend List<T>;
-        friend const_iterator;
-
         iterator(Node* data) : data_(data) {}
+        operator const_iterator();
 
         T& operator*()
         {
-            return data_->obj;
+            return *(data_->obj);
         }
 
         T* operator->()
         {
-            return &(data_->obj);
+            return &*(data_->obj);
         }
 
     protected:
@@ -105,16 +109,15 @@ public:
         using reference = const T&;
 
         const_iterator(const Node* data) : data_(data) {}
-        const_iterator(iterator iter) : data_(iter.data_) {}
 
         const T& operator*()
         {
-            return data_->obj;
+            return *(data_->obj);
         }
 
         const T* operator->()
         {
-            return &(data_->obj);
+            return &*(data_->obj);
         }
 
     protected:
@@ -127,10 +130,28 @@ public:
     const_iterator begin() const { return const_iterator(front_); }
     const_iterator end() const { return const_iterator(end_); }
 
+    void erase(const_iterator iterator)
+    {
+        Node* prevNode = iterator.data_->previous;
+        Node* nextNode = iterator.data_->next;
+
+        if (prevNode != nullptr)
+            prevNode->next = nextNode;
+        if (nextNode != nullptr)
+            nextNode->previous = prevNode;
+
+        if (iterator.data_ == front_)
+            front_ = nextNode;
+
+        delete iterator.data_;
+
+        size_ -= 1;
+    }
+
 protected:
     void advanceEndNode_()
     {
-        end_->next = new Node{nullptr, end_, nullptr};
+        end_->next = new Node{nullptr, end_, std::nullopt};
         end_ = end_->next;
         size_ += 1;
     }
@@ -143,8 +164,7 @@ protected:
 template<typename T>
 List<T>::List()
 {
-    end_ = new Node{nullptr, nullptr, nullptr};
-    front_ = end_;
+    front_ = end_ = new Node{nullptr, nullptr, std::nullopt};
 }
 
 template<typename T>
@@ -153,13 +173,17 @@ List<T>::~List()
     Node* previous = front_;
     for (auto it = ++begin(); it != end(); ++it)
     {
-        delete previous->obj;  // for each node, delete held object
-        delete previous;  // and then node itself
+        delete previous;
         previous = it.data_;
     }
-    delete previous->obj;
     delete previous;
-    delete end_;  // end node doesn't hold an object
+    delete end_;
+}
+
+template<typename T>
+List<T>::iterator::operator const_iterator()
+{
+    return const_iterator(data_);
 }
 
 }  // namespace nostd

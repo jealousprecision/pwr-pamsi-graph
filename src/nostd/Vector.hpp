@@ -11,7 +11,10 @@
     using iterator_category = std::random_access_iterator_tag;\
 \
     iterator_name& operator++(){ data_++; return *this; }\
+    iterator_name  operator++(int){ iterator_name temp(data_); data_++; return temp; }\
     iterator_name& operator--(){ data_--; return *this; }\
+    iterator_name  operator--(int){ iterator_name temp(data_); data_--; return temp; }\
+\
     iterator_name operator+(int value) const\
     {\
         iterator_name result(data_);\
@@ -42,12 +45,17 @@ public:
     {
         if (size != 0)
         {
-            first_ = end_ = allocator_.allocate(size);
-            realEnd_ = first_ + size;
+            first_ = allocator_.allocate(size);
+            realEnd_ = end_ = first_ + size;
+            constructorOnRange_(first_, end_);
         }
     }
 
-    Vector() : Vector(DEFAULT_SIZE) {}
+    Vector()
+    {
+        first_ = end_ = allocator_.allocate(DEFAULT_SIZE);
+        realEnd_ = first_ + DEFAULT_SIZE;
+    }
 
     Vector(const Vector<T>& other) : Vector(other.size())
     {
@@ -187,6 +195,12 @@ protected:
     {
         for (; first != end; ++first)
             first->~T();
+    }
+
+    void constructorOnRange_(T* first, T* end)
+    {
+        for(; first != end; ++first)
+            new(first) T();
     }
 
     void grow_()

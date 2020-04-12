@@ -47,6 +47,12 @@ public:
         }
     }
 
+    operator int() const
+    {
+        std::cout << "TestObject::operator int() = " << *data_ << std::endl;
+        return *data_;
+    }
+
     TestObject& operator=(const TestObject& other)
     {
         std::cout << "TestObject::operator=(const TestObject& = " << *other.data_ << ")" << std::endl;

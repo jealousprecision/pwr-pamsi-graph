@@ -1,27 +1,28 @@
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
 
 #include <algorithm>
 #include <iterator>
 
 #include <nostd/Vector.hpp>
 #include <nostd/List.hpp>
+#include <nostd/MergeSort.hpp>
+#include <nostd/QuickSort.hpp>
 #include <TestObject.hpp>
 
 int main()
 {
     srand(time(nullptr));
 
-    nostd::Vector<int> vec;
+    nostd::List<TestObject> list;
 
-    for (int i = 0; i < 10; ++i)
-        vec.push_back(rand() % 10);
+    for (int i = 0; i < 5; ++i)
+        list.push_back(i);
 
-    std::sort(vec.begin(), vec.end());
+    list.erase(list.begin());
+    list.erase(std::prev(list.end()));
 
-    for (const auto& item : vec)
-        std::cout << item << ", ";
+    std::copy(list.begin(), list.end(), std::ostream_iterator<int>(std::cout, ", "));
     std::cout << std::endl;
-
-    //std::cout << "Hello, size: " << std::distance(list.begin(), list.end()) << '\t' << list.size() << std::endl;
 }
