@@ -1,11 +1,35 @@
 #pragma once
 
-#include <cstring>
+#include <cstddef>
 
 #include <algorithm>
-#include <memory>
 #include <iterator>
-#include <utility>
+
+#define iterator_impl(iterator_name)\
+\
+    using difference_type = ptrdiff_t;\
+    using iterator_category = std::random_access_iterator_tag;\
+\
+    iterator_name& operator++(){ data_++; return *this; }\
+    iterator_name& operator--(){ data_--; return *this; }\
+    iterator_name operator+(int value) const\
+    {\
+        iterator_name result(data_);\
+        result.data_ += value;\
+        return result;\
+    }\
+    iterator_name operator-(int value) const\
+    {\
+        iterator_name result(data_);\
+        result.data_ -= value;\
+        return result;\
+    }\
+    ptrdiff_t operator-(iterator_name other) const { return data_ - other.data_; }\
+    bool operator==(iterator_name other) const { return data_ == other.data_; }\
+    bool operator!=(iterator_name other) const { return data_ != other.data_; }\
+    bool operator<(iterator_name other) const { return data_ < other.data_; }
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 namespace nostd
 {
@@ -104,21 +128,13 @@ public:
     class iterator
     {
     public:
+        iterator_impl(iterator)
+
         using value_type = T;
+        using pointer = T*;
+        using reference = T&;
 
         iterator(T* ptr) : data_(ptr) {}
-
-        iterator& operator++()
-        {
-            data_++;
-            return *this;
-        }
-
-        iterator& operator--()
-        {
-            data_--;
-            return *this;
-        }
 
         T& operator*()
         {
@@ -130,16 +146,6 @@ public:
             return data_;
         }
 
-        bool operator==(iterator other) const
-        {
-            return data_ == other.data_;
-        }
-
-        bool operator!=(iterator other) const
-        {
-            return data_ != other.data_;
-        }
-
     protected:
         T* data_;
     };
@@ -147,21 +153,14 @@ public:
     class const_iterator
     {
     public:
-        using value_type = T;
+        iterator_impl(const_iterator)
+
+        using value_type = const T;
+        using pointer = const T*;
+        using reference = const T&;
 
         const_iterator(const T* ptr) : data_(ptr) {}
-
-        const_iterator& operator++()
-        {
-            data_++;
-            return *this;
-        }
-
-        const_iterator& operator--()
-        {
-            data_--;
-            return *this;
-        }
+        const_iterator(iterator iter) : data_(iter.data_) {}
 
         const T& operator*()
         {
@@ -171,16 +170,6 @@ public:
         const T* operator->()
         {
             return data_;
-        }
-
-        bool operator==(const_iterator other) const
-        {
-            return data_ == other.data_;
-        }
-
-        bool operator!=(const_iterator other) const
-        {
-            return data_ != other.data_;
         }
 
     protected:
@@ -231,3 +220,5 @@ protected:
 };
 
 }  // namespace nostd
+
+#undef iterator_impl
