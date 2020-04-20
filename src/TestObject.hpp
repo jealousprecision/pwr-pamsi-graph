@@ -55,6 +55,9 @@ public:
 
     TestObject& operator=(const TestObject& other)
     {
+        if (other.data_ == nullptr)
+            throw std::runtime_error("TestObject::operator=(const TestObject&): copy from empty object");
+
         std::cout << "TestObject::operator=(const TestObject& = " << *other.data_ << ")" << std::endl;
 
         *data_ = *other.data_;
@@ -63,13 +66,19 @@ public:
 
     TestObject& operator=(TestObject&& other)
     {
+        if (other.data_ == nullptr)
+            throw std::runtime_error("TestObject::operator=(TestObject&&): move from empty object");
+
         std::cout << "TestObject::operator=(TestObject&& = " << *other.data_ << ")" << std::endl;
 
-        delete data_;
         data_ = other.data_;
         other.data_ = nullptr;
+
         return *this;
     }
+
+    //void operator=(const TestObject&) = delete;
+    //void operator=(TestObject&&) = delete;
 
     void set(int i)
     {
@@ -79,6 +88,12 @@ public:
     friend std::ostream& operator<< (std::ostream& os, const TestObject& obj);
 
 protected:
+    void tryDeletingOwnMemory_()
+    {
+        if (data_ != nullptr)
+            delete data_;
+    }
+
     int* data_ = nullptr;
 };
 

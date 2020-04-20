@@ -133,6 +133,10 @@ public:
     T& operator[](size_t idx) { return first_[idx]; }
     const T& operator[](size_t idx) const { return first_[idx]; }
 
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    class const_iterator;
+
     class iterator
     {
     public:
@@ -142,7 +146,10 @@ public:
         using pointer = T*;
         using reference = T&;
 
-        iterator(T* ptr) : data_(ptr) {}
+        explicit iterator(T* ptr) : data_(ptr) {}
+        iterator() : data_(nullptr) {}
+
+        operator const_iterator() const;
 
         T& operator*()
         {
@@ -167,8 +174,8 @@ public:
         using pointer = const T*;
         using reference = const T&;
 
-        const_iterator(const T* ptr) : data_(ptr) {}
-        const_iterator(iterator iter) : data_(iter.data_) {}
+        explicit const_iterator(const T* ptr) : data_(ptr) {}
+        const_iterator() : data_(nullptr) {}
 
         const T& operator*()
         {
@@ -189,6 +196,14 @@ public:
 
     const_iterator begin() const { return const_iterator(first_); }
     const_iterator end() const { return const_iterator(end_); }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    void erase(const_iterator iterator)
+    {
+        throw std::runtime_error("Vector<T>::erase(): Method not implemented");
+    }
 
 protected:
     void destructorOnRange_(T* first, T* end)
@@ -232,6 +247,12 @@ protected:
     Allocator allocator_;
     T *first_ = nullptr, *end_ = nullptr, *realEnd_ = nullptr;
 };
+
+template<typename T, typename Allocator>
+Vector<T, Allocator>::iterator::operator const_iterator() const
+{
+    return Vector<T>::const_iterator(data_);
+}
 
 }  // namespace nostd
 

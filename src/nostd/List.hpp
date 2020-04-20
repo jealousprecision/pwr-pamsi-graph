@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+
+#include <algorithm>
 #include <iterator>
-#include <optional>
+#include <functional>
 
 #define iterator_impl(iterator_name)\
 \
@@ -29,9 +31,9 @@ class List
 {
 public:
     List();
+    List(List<T>&& other);
 
     List(const List<T>& other) = delete;
-    List(List<T>&& other) = delete;
     List& operator=(const List<T>& other) = delete;
     List& operator=(List<T>&& other) = delete;
 
@@ -127,8 +129,10 @@ public:
         using pointer = T*;
         using reference = T&;
 
-        iterator(AbstractNode* data) : data_(data) {}
-        operator const_iterator();
+        explicit iterator(AbstractNode* data) : data_(data) {}
+        iterator() : data_(nullptr) {}
+
+        operator const_iterator() const;
 
         T& operator*()
         {
@@ -153,7 +157,8 @@ public:
         using pointer = const T*;
         using reference = const T&;
 
-        const_iterator(const AbstractNode* data) : data_(data) {}
+        explicit const_iterator(const AbstractNode* data) : data_(data) {}
+        const_iterator() : data_(nullptr) {}
 
         const T& operator*()
         {
@@ -193,7 +198,15 @@ public:
         size_ -= 1;
     }
 
-protected:
+    template<typename Predicate>
+    void remove_if(Predicate predicate)
+    {
+        auto part = std::partition(begin(), end(), predicate);
+        size_ -= std::distance(part, end());
+        deleteRange_(begin(), part);
+    }
+
+//protected:
     void advanceEndNode_(AbstractNode* newNode)
     {
         if (size_ == 0)
@@ -217,6 +230,40 @@ protected:
         size_ += 1;
     }
 
+    void deleteRange_(iterator first, iterator end)
+    {
+        if (first == end)
+            return;
+
+        bool changeFrontPtr = false;
+        AbstractNode* beforeRange = nullptr;
+        if (first.data_->previous != nullptr)
+        {
+            // first != front_
+            beforeRange = first.data_->previous;
+            beforeRange->next = end.data_;
+        }
+        else
+        {
+            // first == front_
+            changeFrontPtr = true;
+        }
+
+        AbstractNode* afterRange = end.data_;
+        afterRange->previous = beforeRange;
+
+        auto previous = first.data_;
+        for (auto it = std::next(first); it != end; ++it)
+        {
+            delete previous;
+            previous = it.data_;
+        }
+        delete previous;
+
+        if (changeFrontPtr)
+            front_ = end.data_;
+    }
+
     size_t size_ = 0;
     AbstractNode* front_ = nullptr;
     AbstractNode* end_ = nullptr;
@@ -229,20 +276,25 @@ List<T>::List()
 }
 
 template<typename T>
+List<T>::List(List<T>&& other)
+{
+    front_ = other.front_;
+    end_ = other.end_;
+    size_ = other.size_;
+
+    other.front_ = other.end_ = new EmptyNode();
+    other.size_ = 0;
+}
+
+template<typename T>
 List<T>::~List()
 {
-    auto previous = front_;
-    for (auto it = ++begin(); it != end(); ++it)
-    {
-        delete previous;
-        previous = it.data_;
-    }
-    delete previous;
+    deleteRange_(begin(), end());
     delete end_;
 }
 
 template<typename T>
-List<T>::iterator::operator const_iterator()
+List<T>::iterator::operator const_iterator() const
 {
     return const_iterator(data_);
 }

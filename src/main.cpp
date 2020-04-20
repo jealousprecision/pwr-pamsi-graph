@@ -10,25 +10,31 @@
 #include <nostd/MergeSort.hpp>
 #include <nostd/QuickSort.hpp>
 #include <TestObject.hpp>
+#include <GraphList.hpp>
 
 int main()
 {
     srand(time(nullptr));
 
-    nostd::List<TestObject> list;
+    GraphList<TestObject, int> graph;
 
+    decltype(graph.addVertex(TestObject())) vert3;
     {
-        TestObject obj(10);
-        list.push_back(obj);
+        TestObject obj(36);
+        vert3 = graph.addVertex(obj);
     }
 
-    list.push_back(TestObject(11));
+    auto vert2 = graph.addVertex(TestObject(24));
+    auto vert1 = graph.emplaceVertex(12);
 
-    list.emplace_back(12);
+    auto edge = graph.addEdge(*vert1, *vert2, 0);
+    auto edge2 = graph.addEdge(*vert1, *vert3, 2);
 
-    list.erase(list.begin());
-    list.erase(std::prev(list.end()));
-
-    std::copy(list.begin(), list.end(), std::ostream_iterator<TestObject>(std::cout, ", "));
+    for (const decltype(graph)::Edge& edge : vert1->edgesOut)
+        std::cout << *edge.from << " --(" << *edge << ")--> " << *edge.to << std::endl;
     std::cout << std::endl;
+
+    graph.removeEdge(*edge);
+    for (const decltype(graph)::Edge& edge : vert1->edgesOut)
+        std::cout << *edge.from << " --(" << *edge << ")--> " << *edge.to << std::endl;
 }
