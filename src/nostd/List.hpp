@@ -31,9 +31,9 @@ class List
 {
 public:
     List();
+    List(const List<T>& other);
     List(List<T>&& other);
 
-    List(const List<T>& other) = delete;
     List& operator=(const List<T>& other) = delete;
     List& operator=(List<T>&& other) = delete;
 
@@ -273,6 +273,13 @@ template<typename T>
 List<T>::List()
 {
     front_ = end_ = new EmptyNode();
+}
+
+template<typename T>
+List<T>::List(const List<T>& other) :
+    List()
+{
+    std::copy(other.begin(), other.end(), std::back_inserter(*this));
 }
 
 template<typename T>

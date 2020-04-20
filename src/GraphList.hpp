@@ -89,13 +89,13 @@ public:
 
     VertIter addVertex(const VertexLabel& vLabel)
     {
-        vertices_.push_back(Vertex(vLabel));
+        vertices_.emplace_back(vLabel);
         return initLastVertex_();
     }
 
     VertIter addVertex(VertexLabel&& vLabel)
     {
-        vertices_.push_back(Vertex(std::move(vLabel)));
+        vertices_.emplace_back(std::move(vLabel));
         return initLastVertex_();
     }
 
@@ -108,13 +108,13 @@ public:
 
     EdgeIter addEdge(Vertex& from, Vertex& to, const EdgeLabel& eLabel)
     {
-        edges_.push_back(Edge(from, to, eLabel));
+        edges_.emplace_back(from, to, eLabel);
         return initLastEdge_();
     }
 
     EdgeIter addEdge(Vertex& from, Vertex& to, EdgeLabel&& eLabel)
     {
-        edges_.push_back(Edge(from, to, std::move(eLabel)));
+        edges_.emplace_back(from, to, std::move(eLabel));
         return initLastEdge_();
     }
 

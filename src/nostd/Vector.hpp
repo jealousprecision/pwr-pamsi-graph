@@ -41,6 +41,8 @@ template<typename T, typename Allocator = std::allocator<T>>
 class Vector
 {
 public:
+    using value_type = T;
+
     Vector(size_t size)
     {
         if (size != 0)
@@ -51,14 +53,25 @@ public:
         }
     }
 
+    Vector(size_t size, const T& obj)
+    {
+        if (size != 0)
+        {
+            first_ = allocator_.allocate(size);
+            realEnd_ = end_ = first_ + size;
+            constructorOnRange_(first_, end_, obj);
+        }
+    }
+
     Vector()
     {
         first_ = end_ = allocator_.allocate(DEFAULT_SIZE);
         realEnd_ = first_ + DEFAULT_SIZE;
     }
 
-    Vector(const Vector<T>& other) : Vector(other.size())
+    Vector(const Vector<T>& other)
     {
+        reserveGrowTo_(other.size());
         std::copy(other.begin(), other.end(), std::back_inserter(*this));
     }
 
@@ -71,7 +84,11 @@ public:
         other.first_ = other.end_ = other.realEnd_ = nullptr;
     }
 
-    Vector<T>& operator=(const Vector<T>& other) = delete;
+    Vector<T>& operator=(const Vector<T>& other)
+    {
+        reserveGrowTo_(other.realSize_());
+        std::copy(other.begin(), other.end(), begin());
+    }
 
     Vector<T>& operator=(Vector<T>&& other)
     {
@@ -197,7 +214,6 @@ public:
     const_iterator begin() const { return const_iterator(first_); }
     const_iterator end() const { return const_iterator(end_); }
 
-
     /////////////////////////////////////////////////////////////////////////////////////
 
     void erase(const_iterator iterator)
@@ -205,7 +221,65 @@ public:
         throw std::runtime_error("Vector<T>::erase(): Method not implemented");
     }
 
+    void resize(unsigned newSize)
+    {
+        if (newSize < size())
+        {
+            shrinkTo_(newSize);
+        }
+        else if (newSize > size())
+        {
+            growTo_(newSize);
+        }
+    }
+
 protected:
+    void shrinkTo_(unsigned newSize)
+    {
+        destructorOnRange_(first_ + newSize, end_);
+        end_ = first_ + newSize;
+    }
+
+    void growTo_(unsigned newSize)
+    {
+        if (newSize <= realSize_())
+        {
+            constructorOnRange_(end_, first_ + newSize);
+            end_ = first_ + newSize;
+        }
+        else
+        {
+            auto oldSize = size();
+            auto newFirst = allocator_.allocate(newSize);
+
+            for (size_t i = 0; i < oldSize; ++i)
+                new(newFirst + i) T(std::move(first_[i]));
+
+            destructorOnRange_(first_, end_);
+            allocator_.deallocate(first_, oldSize);
+
+            constructorOnRange_(newFirst + oldSize, newFirst + newSize);
+            first_ = newFirst;
+            end_ = realEnd_ = newFirst + newSize;
+        }
+    }
+
+    void reserveGrowTo_(unsigned newSize)
+    {
+        auto oldSize = size();
+        auto newFirst = allocator_.allocate(newSize);
+
+        for (size_t i = 0; i < oldSize; ++i)
+            new(newFirst + i) T(std::move(first_[i]));
+
+        destructorOnRange_(first_, end_);
+        allocator_.deallocate(first_, oldSize);
+
+        first_ = newFirst;
+        end_ = first_ + oldSize;
+        realEnd_ = first_ + newSize;
+    }
+
     void destructorOnRange_(T* first, T* end)
     {
         for (; first != end; ++first)
@@ -218,23 +292,16 @@ protected:
             new(first) T();
     }
 
+    void constructorOnRange_(T* first, T* end, const T& obj)
+    {
+        for(; first != end; ++first)
+            new(first) T(obj);
+    }
+
     void grow_()
     {
-        auto oldRealSize = realSize_();
         auto oldSize = size();
-
-        auto newSize = oldSize ? 2 * oldSize : 1;  // to work when vector is empty
-        auto newFirst = allocator_.allocate(newSize);
-
-        for (size_t i = 0; i < oldSize; ++i)
-            new(newFirst + i) T(std::move(first_[i]));
-
-        destructorOnRange_(first_, end_);
-        allocator_.deallocate(first_, oldRealSize);
-
-        first_ = newFirst;
-        end_ = newFirst + oldSize;
-        realEnd_ = newFirst + newSize;
+        reserveGrowTo_(oldSize == 0 ? 1 : 2 * oldSize);
     }
 
     size_t realSize_() const
