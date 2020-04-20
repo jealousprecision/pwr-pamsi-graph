@@ -17,12 +17,18 @@ int main()
 
     nostd::List<TestObject> list;
 
-    for (int i = 0; i < 5; ++i)
-        list.push_back(i);
+    {
+        TestObject obj(10);
+        list.push_back(obj);
+    }
+
+    list.push_back(TestObject(11));
+
+    list.emplace_back(12);
 
     list.erase(list.begin());
     list.erase(std::prev(list.end()));
 
-    std::copy(list.begin(), list.end(), std::ostream_iterator<int>(std::cout, ", "));
+    std::copy(list.begin(), list.end(), std::ostream_iterator<TestObject>(std::cout, ", "));
     std::cout << std::endl;
 }

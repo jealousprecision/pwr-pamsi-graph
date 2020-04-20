@@ -37,39 +37,84 @@ public:
 
     ~List();
 
-    struct Node
+    struct AbstractNode
     {
-        Node* next = nullptr;
-        Node* previous = nullptr;
-        std::optional<T> obj = std::nullopt;
+        virtual ~AbstractNode() = default;
+
+        virtual T& get() = 0;
+        virtual const T& get() const = 0;
+
+        AbstractNode* next = nullptr;
+        AbstractNode* previous = nullptr;
+    };
+
+    struct EmptyNode : public AbstractNode
+    {
+        T& get() override
+        {
+            throw std::runtime_error("List<>::EmptyNode::get(): dereferencing empty node");
+        }
+
+        const T& get() const override
+        {
+            throw std::runtime_error("List<>::EmptyNode::get(): dereferencing empty node");
+        }
+    };
+
+    struct BasicNode : public AbstractNode
+    {
+        BasicNode(const T& obj) :
+            obj_(obj)
+        {}
+
+        BasicNode(T&& obj) :
+            obj_(std::move(obj))
+        {}
+
+        template<typename... Args>
+        BasicNode(Args&&... args) :
+            obj_(std::forward<Args>(args)...)
+        {}
+
+        T& get() override
+        {
+            return obj_;
+        }
+
+        const T& get() const override
+        {
+            return obj_;
+        }
+
+    protected:
+        T obj_;
     };
 
     void push_back(const T& obj)
     {
-        end_->obj.emplace(obj);
-        advanceEndNode_();
+        advanceEndNode_(new BasicNode(obj));
     }
 
     void push_back(T&& obj)
     {
-        end_->obj.emplace(std::move(obj));
-        advanceEndNode_();
+        advanceEndNode_(new BasicNode(std::move(obj)));
     }
 
     template<typename... Args>
     void emplace_back(Args&&... args)
     {
-        end_->obj.emplace(std::forward<Args>(args)...);
-        advanceEndNode_();
+        advanceEndNode_(new BasicNode(std::forward<Args>(args)...));
     }
 
-    T& front() { return front_->obj; }
-    T& back() { return end_->previous->obj; }
+    T& front() { return front_->get(); }
+    T& back() { return end_->previous->get(); }
 
-    const T& front() const { return front_->obj; }
-    const T& back() const { return end_->previous->obj; }
+    const T& front() const { return front_->get(); }
+    const T& back() const { return end_->previous->get(); }
 
     size_t size() const { return size_; }
+
+    /////////////////////////////////////////////////////////////////////////////////////
 
     class const_iterator;
 
@@ -82,21 +127,21 @@ public:
         using pointer = T*;
         using reference = T&;
 
-        iterator(Node* data) : data_(data) {}
+        iterator(AbstractNode* data) : data_(data) {}
         operator const_iterator();
 
         T& operator*()
         {
-            return *(data_->obj);
+            return data_->get();
         }
 
         T* operator->()
         {
-            return &*(data_->obj);
+            return &data_->get();
         }
 
     protected:
-        Node* data_;
+        AbstractNode* data_;
     };
 
     class const_iterator
@@ -108,20 +153,20 @@ public:
         using pointer = const T*;
         using reference = const T&;
 
-        const_iterator(const Node* data) : data_(data) {}
+        const_iterator(const AbstractNode* data) : data_(data) {}
 
         const T& operator*()
         {
-            return *(data_->obj);
+            return data_->get();
         }
 
         const T* operator->()
         {
-            return &*(data_->obj);
+            return &data_->get();
         }
 
     protected:
-        const Node* data_;
+        const AbstractNode* data_;
     };
 
     iterator begin() { return iterator(front_); }
@@ -130,17 +175,17 @@ public:
     const_iterator begin() const { return const_iterator(front_); }
     const_iterator end() const { return const_iterator(end_); }
 
+    /////////////////////////////////////////////////////////////////////////////////////
+
     void erase(const_iterator iterator)
     {
-        Node* prevNode = iterator.data_->previous;
-        Node* nextNode = iterator.data_->next;
+        auto prevNode = iterator.data_->previous;
+        auto nextNode = iterator.data_->next;
 
+        // first node
         if (prevNode != nullptr)
             prevNode->next = nextNode;
-        if (nextNode != nullptr)
-            nextNode->previous = prevNode;
-
-        if (iterator.data_ == front_)
+        else
             front_ = nextNode;
 
         delete iterator.data_;
@@ -149,28 +194,44 @@ public:
     }
 
 protected:
-    void advanceEndNode_()
+    void advanceEndNode_(AbstractNode* newNode)
     {
-        end_->next = new Node{nullptr, end_, std::nullopt};
-        end_ = end_->next;
+        if (size_ == 0)
+        {
+            front_ = newNode;
+
+            newNode->next = end_;
+            end_->previous = newNode;
+        }
+        else
+        {
+            auto prevNode = end_->previous;
+
+            newNode->previous = prevNode;
+            newNode->next = end_;
+
+            prevNode->next = newNode;
+            end_->previous = newNode;
+        }
+
         size_ += 1;
     }
 
     size_t size_ = 0;
-    Node* front_ = nullptr;
-    Node* end_ = nullptr;
+    AbstractNode* front_ = nullptr;
+    AbstractNode* end_ = nullptr;
 };
 
 template<typename T>
 List<T>::List()
 {
-    front_ = end_ = new Node{nullptr, nullptr, std::nullopt};
+    front_ = end_ = new EmptyNode();
 }
 
 template<typename T>
 List<T>::~List()
 {
-    Node* previous = front_;
+    auto previous = front_;
     for (auto it = ++begin(); it != end(); ++it)
     {
         delete previous;

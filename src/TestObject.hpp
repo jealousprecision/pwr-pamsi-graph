@@ -11,7 +11,7 @@ public:
         std::cout << "TestObject::TestObject()" << std::endl;
     }
 
-    TestObject(int i) :
+    explicit TestObject(int i) :
         data_(new int(i))
     {
         std::cout << "TestObject::TestObject(int = " << i << ")" << std::endl;
