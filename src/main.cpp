@@ -11,28 +11,40 @@
 #include <nostd/QuickSort.hpp>
 #include <TestObject.hpp>
 #include <GraphList.hpp>
+#include <GraphMatrix.hpp>
 
 int main()
 {
+    {
+        GraphList<std::string, int> graph;
 
-    GraphList<std::string, int> graph;
+        auto vert1 = graph.addVertex("A");
+        auto vert2 = graph.addVertex("B");
+        auto vert3 = graph.addVertex("C");
 
-    auto vert1 = graph.addVertex("A");
-    auto vert2 = graph.addVertex("B");
-    auto vert3 = graph.addVertex("C");
+        auto edge = graph.addEdge(vert1, vert2, 42);
+        auto edge2 = graph.addEdge(vert2, vert3, 84);
+        auto edge3 = graph.addEdge(vert1, vert3, 63);
 
-    auto edge = graph.addEdge(vert1, vert2, 42);
-    auto edge2 = graph.addEdge(vert2, vert3, 84);
-    auto edge3 = graph.addEdge(vert1, vert3, 63);
+        for (auto edge : graph.allEdges())
+            std::cout << *edge.from() << " -(" << *edge << ")-> " << *edge.to() << std::endl;
 
-    for (auto edge : graph.allEdges())
-        std::cout << *edge.from() << " -(" << *edge << ")-> " << *edge.to() << std::endl;
+        std::cout << std::endl;
 
-    std::cout << std::endl;
+        graph.removeVertex(vert2);
 
-    graph.removeVertex(vert2);
+        for (auto edge : graph.allEdges())
+            std::cout << *edge.from() << " -(" << *edge << ")-> " << *edge.to() << std::endl;
+    }
+    {
+        GraphMatrix<std::string, int> graph;
 
-    for (auto edge : graph.allEdges())
-        std::cout << *edge.from() << " -(" << *edge << ")-> " << *edge.to() << std::endl;
+        auto vert1 = graph.addVertex("A");
+        auto vert2 = graph.addVertex("B");
+        auto vert3 = graph.addVertex("C");
 
+        auto edge = graph.addEdge(vert1, vert2, 42);
+        auto edge2 = graph.addEdge(vert2, vert3, 84);
+        auto edge3 = graph.addEdge(vert1, vert3, 63);
+    }
 }

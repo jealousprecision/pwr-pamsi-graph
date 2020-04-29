@@ -7,7 +7,9 @@ class Matrix
 {
 public:
     Matrix(unsigned rows, unsigned cols) :
-        data_(rows, nostd::Vector<T>(cols))
+        data_(rows, nostd::Vector<T>(cols)),
+        rows_(rows),
+        cols_(cols)
     {
     }
 
@@ -33,12 +35,12 @@ public:
 
     unsigned rows() const
     {
-        return data_.size();
+        return rows_;
     }
 
     unsigned cols() const
     {
-        return data_[0].size();
+        return cols_;
     }
 
     void growByOne()
@@ -48,8 +50,12 @@ public:
         auto oldSize = cols();
         for (auto& vec : data_)
             vec.resize(oldSize + 1);
+
+        rows_ += 1;
+        cols_ += 1;
     }
 
 protected:
     nostd::Vector<nostd::Vector<T>> data_;
+    unsigned rows_, cols_;
 };
