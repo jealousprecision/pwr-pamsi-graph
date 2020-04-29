@@ -168,12 +168,12 @@ public:
 
         operator const_iterator() const;
 
-        T& operator*()
+        T& operator*() const
         {
             return *data_;
         }
 
-        T* operator->()
+        T* operator->() const
         {
             return data_;
         }
@@ -194,12 +194,12 @@ public:
         explicit const_iterator(const T* ptr) : data_(ptr) {}
         const_iterator() : data_(nullptr) {}
 
-        const T& operator*()
+        const T& operator*() const
         {
             return *data_;
         }
 
-        const T* operator->()
+        const T* operator->() const
         {
             return data_;
         }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <iterator>
 
@@ -9,147 +10,182 @@
 template<typename VertexLabel, typename EdgeLabel>
 class GraphList
 {
-protected:
-    enum class UsePerfectForward
-    {
-        True,
-    };
-
 public:
-    struct Edge;
-    struct Vertex;
+    struct EdgeData;
+    struct VertexData;
 
-    using EdgeIter = typename nostd::List<Edge>::iterator;
-    using VertIter = typename nostd::List<Vertex>::iterator;
+    class Vertex;
+    class Edge;
 
-    struct Vertex
+    struct VertexData
     {
-        Vertex(const VertexLabel& vLabel) :
+        VertexData(const VertexLabel& vLabel) :
             data(vLabel)
         {}
 
-        Vertex(VertexLabel&& vLabel) :
+        VertexData(VertexLabel&& vLabel) :
             data(std::move(vLabel))
         {}
 
-        template<typename... Args>
-        Vertex(UsePerfectForward dummy, Args&&... args) :
-            data(std::forward<Args>(args)...)
-        {}
+        VertexData(VertexData&& vert) = default;
 
-        Vertex(Vertex&& vert) = default;
+        VertexData() = delete;
+        VertexData(const VertexData& other) = delete;
+        void operator=(const VertexData& other) = delete;
+        void operator=(VertexData&& other) = delete;
 
-        Vertex() = delete;
-        Vertex(const Vertex& other) = delete;
-        void operator=(const Vertex& other) = delete;
-        void operator=(Vertex&& other) = delete;
+        /////////////////////////////////////////////////////
 
-        VertexLabel& operator*() { return data; }
-        const VertexLabel& operator*() const { return data; }
-
-        using EdgeRef = std::reference_wrapper<Edge>;
-        nostd::List<EdgeRef> edgesOut;
-        nostd::List<EdgeRef> edgesIn;
-
-        VertIter position;
+        nostd::List<Edge> edgesOut;
+        nostd::List<Edge> edgesIn;
         VertexLabel data;
     };
 
-    struct Edge
+    class Vertex
     {
-        Edge(Vertex& From, Vertex& To, const EdgeLabel& eLabel) :
-            from(From), to(To), data(eLabel)
+        using VertexDataIter = typename nostd::List<VertexData>::iterator;
+
+    public:
+        explicit Vertex(VertexDataIter iter) : vertexData_(iter) {}
+
+        VertexLabel& operator*() const { return vertexData_->data; }
+        VertexLabel* operator->() const { return &vertexData_->data; }
+
+        const auto& edgesOut() const { return vertexData_->edgesOut; }
+        const auto& edgesIn() const { return vertexData_->edgesIn; }
+
+        friend class GraphList<VertexLabel, EdgeLabel>;
+
+    protected:
+        VertexDataIter vertexData_;
+    };
+
+    struct EdgeData
+    {
+        EdgeData(Vertex _from, Vertex _to, const EdgeLabel& eLabel) :
+            from(_from), to(_to), data(eLabel)
         {}
 
-        Edge(Vertex& From, Vertex& To, EdgeLabel&& eLabel) :
-            from(From), to(To), data(std::move(eLabel))
+        EdgeData(Vertex _from, Vertex _to, EdgeLabel&& eLabel) :
+            from(_from), to(_to), data(std::move(eLabel))
         {}
 
-        template<typename... Args>
-        Edge(UsePerfectForward, Vertex& From, Vertex& To, Args&&... args) :
-            from(From), to(To), data(std::forward<Args>(args)...)
-        {}
+        EdgeData(EdgeData&& edge) = default;
 
-        Edge(Edge&& edge) = default;
-
-        Edge() = delete;
-        Edge(const Edge& edge) = delete;
+        EdgeData() = delete;
+        EdgeData(const Edge& edge) = delete;
         void operator=(const Edge& edge) = delete;
         void operator=(Edge&& edge) = delete;
 
-        EdgeLabel& operator*() { return data; }
-        const EdgeLabel& operator*() const { return data; }
+        ///////////////////////////////////////////////
 
-        Vertex& from;
-        Vertex& to;
-
-        EdgeIter position;
+        Vertex from;
+        Vertex to;
         EdgeLabel data;
     };
 
-    VertIter addVertex(const VertexLabel& vLabel)
+    class Edge
+    {
+        using EdgeDataIter = typename nostd::List<EdgeData>::iterator;
+
+    public:
+        explicit Edge(EdgeDataIter iter) : edgeData_(iter) {}
+
+        EdgeLabel& operator*() const { return edgeData_->data; }
+        EdgeLabel* operator->() const { return &edgeData_->data; }
+
+        Vertex from() const { return edgeData_->from; }
+        Vertex to() const { return edgeData_->to; }
+
+        friend class GraphList<VertexLabel, EdgeLabel>;
+
+    protected:
+        EdgeDataIter edgeData_;
+    };
+
+    Vertex addVertex(const VertexLabel& vLabel)
     {
         vertices_.emplace_back(vLabel);
         return initLastVertex_();
     }
 
-    VertIter addVertex(VertexLabel&& vLabel)
+    Vertex addVertex(VertexLabel&& vLabel)
     {
         vertices_.emplace_back(std::move(vLabel));
         return initLastVertex_();
     }
 
-    template<typename... Args>
-    VertIter emplaceVertex(Args&&... args)
-    {
-        vertices_.emplace_back(UsePerfectForward::True, std::forward<Args>(args)...);
-        return initLastVertex_();
-    }
-
-    EdgeIter addEdge(Vertex& from, Vertex& to, const EdgeLabel& eLabel)
+    Edge addEdge(Vertex from, Vertex to, const EdgeLabel& eLabel)
     {
         edges_.emplace_back(from, to, eLabel);
         return initLastEdge_();
     }
 
-    EdgeIter addEdge(Vertex& from, Vertex& to, EdgeLabel&& eLabel)
+    Edge addEdge(Vertex from, Vertex to, EdgeLabel&& eLabel)
     {
         edges_.emplace_back(from, to, std::move(eLabel));
         return initLastEdge_();
     }
 
-    template<typename... Args>
-    EdgeIter emplaceEdge(Vertex& from, Vertex& to, Args&&... args)
+    void removeEdge(Edge edge)
     {
-        edges_.emplace_back(UsePerfectForward::True, from, to, std::forward<Args>(args)...);
-        return initLastEdge_();
+        auto edgePointsToSameObj = [&](const auto& otherEdge) { return edge.edgeData_ == otherEdge.edgeData_; };
+        edge.from().vertexData_->edgesOut.remove_first(edgePointsToSameObj);
+        edge.to().vertexData_->edgesIn.remove_first(edgePointsToSameObj);
+
+        edges_.erase(edge.edgeData_);
     }
 
-    void removeEdge(const Edge& edge)
+    void removeVertex(Vertex vertex)
     {
-        edge.from.edgesOut.remove_if([&](const Edge& el){ return (&el) == (&edge); });
-        edge.to.edgesIn.remove_if([&](const Edge& el){ return (&el) == (&edge); });
+        nostd::Vector<Edge> edgesToRemove;
+        std::copy(vertex.edgesIn().begin(), vertex.edgesIn().end(), std::back_inserter(edgesToRemove));
+        std::copy(vertex.edgesOut().begin(), vertex.edgesOut().end(), std::back_inserter(edgesToRemove));
+
+        for (auto edge : edgesToRemove)
+            removeEdge(edge);
+
+        vertices_.erase(vertex.vertexData_);
+    }
+
+    nostd::Vector<Vertex> allVertices()
+    {
+        // c++ doesn't have transform iterator or lazy ranges, sooooo
+        nostd::Vector<Vertex> result;
+
+        for (auto it = vertices_.begin(); it != vertices_.end(); ++it)
+            result.emplace_back(it);
+
+        return result;
+    }
+
+    nostd::Vector<Edge> allEdges()
+    {
+        nostd::Vector<Edge> result;
+
+        for (auto it = edges_.begin(); it != edges_.end(); ++it)
+            result.emplace_back(it);
+
+        return result;
     }
 
 protected:
-    auto initLastVertex_()
+    Vertex initLastVertex_()
     {
         auto lastVertex = std::prev(vertices_.end());
-        lastVertex->position = lastVertex;
-        return lastVertex;
+        return Vertex{lastVertex};
     }
 
-    auto initLastEdge_()
+    Edge initLastEdge_()
     {
         auto lastEdge = std::prev(edges_.end());
 
-        lastEdge->position = lastEdge;
-        lastEdge->from.edgesOut.push_back(*lastEdge);
-        lastEdge->to.edgesIn.push_back(*lastEdge);
+        lastEdge->from.vertexData_->edgesOut.push_back(Edge{lastEdge});
+        lastEdge->to.vertexData_->edgesIn.push_back(Edge{lastEdge});
 
-        return lastEdge;
+        return Edge{lastEdge};
     }
 
-    nostd::List<Vertex> vertices_;
-    nostd::List<Edge> edges_;
+    nostd::List<VertexData> vertices_;
+    nostd::List<EdgeData> edges_;
 };

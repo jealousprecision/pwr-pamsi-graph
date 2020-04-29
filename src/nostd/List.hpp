@@ -108,10 +108,10 @@ public:
         advanceEndNode_(new BasicNode(std::forward<Args>(args)...));
     }
 
-    T& front() { return front_->get(); }
+    T& front() { return front_->next->get(); }
     T& back() { return end_->previous->get(); }
 
-    const T& front() const { return front_->get(); }
+    const T& front() const { return front_->next->get(); }
     const T& back() const { return end_->previous->get(); }
 
     size_t size() const { return size_; }
@@ -134,12 +134,12 @@ public:
 
         operator const_iterator() const;
 
-        T& operator*()
+        T& operator*() const
         {
             return data_->get();
         }
 
-        T* operator->()
+        T* operator->() const
         {
             return &data_->get();
         }
@@ -160,12 +160,12 @@ public:
         explicit const_iterator(const AbstractNode* data) : data_(data) {}
         const_iterator() : data_(nullptr) {}
 
-        const T& operator*()
+        const T& operator*() const
         {
             return data_->get();
         }
 
-        const T* operator->()
+        const T* operator->() const
         {
             return &data_->get();
         }
@@ -174,10 +174,10 @@ public:
         const AbstractNode* data_;
     };
 
-    iterator begin() { return iterator(front_); }
+    iterator begin() { return std::next(iterator(front_)); }
     iterator end() { return iterator(end_); }
 
-    const_iterator begin() const { return const_iterator(front_); }
+    const_iterator begin() const { return std::next(const_iterator(front_)); }
     const_iterator end() const { return const_iterator(end_); }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -187,45 +187,35 @@ public:
         auto prevNode = iterator.data_->previous;
         auto nextNode = iterator.data_->next;
 
-        // first node
-        if (prevNode != nullptr)
-            prevNode->next = nextNode;
-        else
-            front_ = nextNode;
+        prevNode->next = nextNode;
+        nextNode->previous = prevNode;
 
         delete iterator.data_;
 
         size_ -= 1;
     }
 
-    template<typename Predicate>
-    void remove_if(Predicate predicate)
-    {
-        auto part = std::partition(begin(), end(), predicate);
-        size_ -= std::distance(part, end());
-        deleteRange_(begin(), part);
-    }
+   template<typename Predicate>
+   void remove_first(Predicate predicate)
+   {
+       auto found = std::find_if(begin(), end(), predicate);
 
-//protected:
+       if (found != end())
+            erase(found);
+        else
+            throw std::runtime_error("List::remove_if(): obj not found");
+   }
+
+protected:
     void advanceEndNode_(AbstractNode* newNode)
     {
-        if (size_ == 0)
-        {
-            front_ = newNode;
+        auto prevNode = end_->previous;
 
-            newNode->next = end_;
-            end_->previous = newNode;
-        }
-        else
-        {
-            auto prevNode = end_->previous;
+        newNode->previous = prevNode;
+        newNode->next = end_;
 
-            newNode->previous = prevNode;
-            newNode->next = end_;
-
-            prevNode->next = newNode;
-            end_->previous = newNode;
-        }
+        prevNode->next = newNode;
+        end_->previous = newNode;
 
         size_ += 1;
     }
@@ -235,21 +225,10 @@ public:
         if (first == end)
             return;
 
-        bool changeFrontPtr = false;
-        AbstractNode* beforeRange = nullptr;
-        if (first.data_->previous != nullptr)
-        {
-            // first != front_
-            beforeRange = first.data_->previous;
-            beforeRange->next = end.data_;
-        }
-        else
-        {
-            // first == front_
-            changeFrontPtr = true;
-        }
-
+        AbstractNode* beforeRange = first.data_->previous;
         AbstractNode* afterRange = end.data_;
+
+        beforeRange->next = afterRange;
         afterRange->previous = beforeRange;
 
         auto previous = first.data_;
@@ -259,9 +238,6 @@ public:
             previous = it.data_;
         }
         delete previous;
-
-        if (changeFrontPtr)
-            front_ = end.data_;
     }
 
     size_t size_ = 0;
@@ -272,7 +248,11 @@ public:
 template<typename T>
 List<T>::List()
 {
-    front_ = end_ = new EmptyNode();
+    front_ = new EmptyNode();
+    end_ = new EmptyNode();
+
+    front_->next = end_;
+    end_->previous = front_;
 }
 
 template<typename T>
@@ -297,6 +277,7 @@ template<typename T>
 List<T>::~List()
 {
     deleteRange_(begin(), end());
+    delete front_; // empty nodes
     delete end_;
 }
 
