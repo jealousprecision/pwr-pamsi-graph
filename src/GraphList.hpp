@@ -51,8 +51,8 @@ public:
         VertexLabel& operator*() const { return vertexData_->data; }
         VertexLabel* operator->() const { return &vertexData_->data; }
 
-        const auto& edgesOut() const { return vertexData_->edgesOut; }
-        const auto& edgesIn() const { return vertexData_->edgesIn; }
+        const nostd::List<Edge>& edgesOut() const { return vertexData_->edgesOut; }
+        const nostd::List<Edge>& edgesIn() const { return vertexData_->edgesIn; }
 
         friend class GraphList<VertexLabel, EdgeLabel>;
 
