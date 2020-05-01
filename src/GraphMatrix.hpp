@@ -159,25 +159,34 @@ public:
         return initLastEdge(from, to);
     }
 
-    nostd::List<Vertex> allVertices()
+    nostd::Vector<Vertex> allVertices()
     {
         // once again, no lazy ranges...
-        nostd::List<Vertex> result;
+        nostd::Vector<Vertex> result;
 
-        for (auto it = vertices_.begin(); it != edges_.end(); ++it)
+        for (auto it = vertices_.begin(); it != vertices_.end(); ++it)
             result.emplace_back(it, *this);
 
         return result;
     }
 
-    nostd::List<Edge> allEdges()
+    nostd::Vector<Edge> allEdges()
     {
-        nostd::List<Edge> result;
+        nostd::Vector<Edge> result;
 
         for (auto it = edges_.begin(); it != edges_.end(); ++it)
             result.emplace_back(it, *this);
 
         return result;
+    }
+
+    std::optional<Edge> isEdgeBetween(Vertex from, Vertex to)
+    {
+        auto& obj = adjacencyMatrix_(from.vertexData_->idx, to.vertexData_->idx);
+        if (obj.has_value())
+            return Edge(obj.value(), *this);
+        else
+            return std::nullopt;
     }
 
 protected:
@@ -192,7 +201,12 @@ protected:
     Edge initLastEdge(Vertex from, Vertex to)
     {
         auto edgeIt = std::prev(edges_.end());
-        adjacencyMatrix_(from.vertexData_->idx, to.vertexData_->idx).emplace(edgeIt);
+
+        auto& place = adjacencyMatrix_(from.vertexData_->idx, to.vertexData_->idx);
+        if (place.has_value())
+            throw std::runtime_error("Tried to insert into already full edge");
+        place.emplace(edgeIt);
+
         edgeIt->idx = std::tie(from.vertexData_->idx, to.vertexData_->idx);
         return Edge(edgeIt, *this);
     }

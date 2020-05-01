@@ -51,6 +51,9 @@ public:
         VertexLabel& operator*() const { return vertexData_->data; }
         VertexLabel* operator->() const { return &vertexData_->data; }
 
+        bool operator==(const Vertex& other) const { return vertexData_ == other.vertexData_; }
+        bool operator!=(const Vertex& other) const { return vertexData_ != other.vertexData_; }
+
         const nostd::List<Edge>& edgesOut() const { return vertexData_->edgesOut; }
         const nostd::List<Edge>& edgesIn() const { return vertexData_->edgesIn; }
 
@@ -167,6 +170,20 @@ public:
             result.emplace_back(it);
 
         return result;
+    }
+
+    std::optional<Edge> isEdgeBetween(Vertex from, Vertex to)
+    {
+        auto found =  std::find_if(from.edgesOut().begin(), from.edgesOut().end(),
+            [&](const auto& edge)
+            {
+                return edge.to() == to;
+            });
+
+        if (found == from.edgesOut().end())
+            return std::nullopt;
+
+        return *found;
     }
 
 protected:
