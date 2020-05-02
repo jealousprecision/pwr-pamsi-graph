@@ -17,7 +17,7 @@ void logIntoGraphVizFormat(std::ostream& os, GraphType& graph)
 {
     os << "digraph G{\n";
     for (auto edge : graph.allEdges())
-        os << '\t' << *edge.from() << " -> " << *edge.to() << " [label=\"" << *edge << "\"]\n";
+        os << "\t\"" << *edge.from() << "\" -> \"" << *edge.to() << "\" [label=\"" << *edge << "\"]\n";
     os << "}" << std::endl;
 }
 

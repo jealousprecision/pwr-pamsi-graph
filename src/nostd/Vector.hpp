@@ -14,6 +14,8 @@
     iterator_name  operator++(int){ iterator_name temp(data_); data_++; return temp; }\
     iterator_name& operator--(){ data_--; return *this; }\
     iterator_name  operator--(int){ iterator_name temp(data_); data_--; return temp; }\
+    iterator_name& operator+=(int value){ data_ += value; return *this; }\
+    iterator_name& operator-=(int value){ data_ -= value; return *this; }\
 \
     iterator_name operator+(int value) const\
     {\
@@ -42,6 +44,13 @@ class Vector
 {
 public:
     using value_type = T;
+
+    Vector(const std::initializer_list<T>& list) :
+        Vector()
+    {
+        reserveGrowTo_(list.size());
+        std::copy(list.begin(), list.end(), std::back_inserter(*this));
+    }
 
     Vector(size_t size)
     {

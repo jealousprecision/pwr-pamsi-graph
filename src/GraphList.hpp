@@ -139,7 +139,7 @@ public:
 
         edges_.erase(edge.edgeData_);
     }
-
+    /*
     void removeVertex(Vertex vertex)
     {
         nostd::Vector<Edge> edgesToRemove;
@@ -151,6 +151,7 @@ public:
 
         vertices_.erase(vertex.vertexData_);
     }
+    */
 
     nostd::Vector<Vertex> allVertices()
     {

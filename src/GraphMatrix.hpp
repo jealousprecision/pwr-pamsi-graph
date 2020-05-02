@@ -62,7 +62,7 @@ public:
 
             for (unsigned col = 0; col < matrix.cols(); ++col)
                 if (matrix(row, col).has_value())
-                    result.push_back(Edge(matrix(row, col).value()));
+                    result.emplace_back(matrix(row, col).value(), graph_);
 
             return result;
         }
@@ -75,7 +75,7 @@ public:
 
             for (unsigned row = 0; row < matrix.rows(); ++row)
                 if (matrix(row, col).has_value())
-                    result.push_back(Edge(matrix(row, col).value()));
+                    result.emplace_back(matrix(row, col).value(), graph_);
 
             return result;
         }

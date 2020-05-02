@@ -17,17 +17,9 @@
 #include <GraphUtils.hpp>
 #include <GraphAlgo.hpp>
 
-void logDisjointSet(const nostd::DisjointSet& set)
+std::ostream& operator<<(std::ostream& os, std::tuple<unsigned, unsigned> idxCost)
 {
-    std::cout << std::setw(2);
-
-    for (unsigned i = 0; i < set.size(); ++i)
-        std::cout << i << " ";
-    std::cout << '\n';
-
-    for (const auto& val : set)
-        std::cout << val << " ";
-    std::cout << '\n';
+    return os << std::get<0>(idxCost) << ", " << std::get<1>(idxCost);
 }
 
 int main()
@@ -41,16 +33,13 @@ int main()
     loadGraph(input_file, graph);
     logIntoGraphVizFormat(out_file, graph);
 
-    {
-        GraphList<int, int> graph;
-        auto v1 = graph.addVertex(0);
-        auto v2 = graph.addVertex(1);
-        auto v3 = graph.addVertex(2);
-        graph.addEdge(v1, v2, 42);
-        graph.addEdge(v1, v3, 69);
-        graph.addEdge(v2, v3, 80);
-        //graph.addEdge(v3, v1, 13);
+    auto vertices = graph.allVertices();
+    auto result = Dijkstra(graph, vertices[0]);
+    std::cout << "Vertex\tDistance from source\n";
+    for (unsigned idx = 0; idx < std::get<0>(result).size(); ++idx)
+        std::cout << *vertices[idx] << '\t' << std::get<0>(result)[idx] << '\n';
 
-        std::cout << isCycle(graph.allEdges(), graph.verticesSize()) << std::endl;
-    }
+    auto graphDijkstra = getGraphFromDijkstraOutput(std::get<0>(result), std::get<1>(result));
+    std::ofstream dijkstraOut("dijkstraOut.gv");
+    logIntoGraphVizFormat(dijkstraOut, graphDijkstra);
 }
