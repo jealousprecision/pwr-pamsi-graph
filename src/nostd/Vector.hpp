@@ -141,6 +141,12 @@ public:
         end_ += 1;
     }
 
+    void pop_back()
+    {
+        end_ -= 1;
+        end_->~T();
+    }
+
     T& front() { return *first_; }
     T& back() { return *(end_ - 1); }
 

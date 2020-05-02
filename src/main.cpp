@@ -5,123 +5,52 @@
 #include <algorithm>
 #include <iterator>
 #include <fstream>
+#include <iostream>
+#include <iomanip>
 
 #include <nostd/Vector.hpp>
 #include <nostd/List.hpp>
-#include <nostd/MergeSort.hpp>
-#include <nostd/QuickSort.hpp>
+#include <nostd/DisjointSet.hpp>
 #include <TestObject.hpp>
 #include <GraphList.hpp>
 #include <GraphMatrix.hpp>
+#include <GraphUtils.hpp>
+#include <GraphAlgo.hpp>
 
-template<typename GraphType>
-void logGraph(GraphType& graph)
+void logDisjointSet(const nostd::DisjointSet& set)
 {
-    for (auto edge : graph.allEdges())
-        std::cout << *edge.from() << " -(" << *edge << ")-> " << *edge.to() << std::endl;
-}
+    std::cout << std::setw(2);
 
-template<typename GraphType>
-void logIntoGraphVizFormat(std::ostream& os, GraphType& graph)
-{
-    os << "digraph G{\n";
-    for (auto edge : graph.allEdges())
-        os << *edge.from() << " -> " << *edge.to() << " [label=\"" << *edge << "\"]\n";
-    os << "}" << std::endl;
-}
+    for (unsigned i = 0; i < set.size(); ++i)
+        std::cout << i << " ";
+    std::cout << '\n';
 
-template<typename GraphType>
-void fillGraph(GraphType& graph)
-{
-    std::string str = "A";
-    for(; str[0] <= 'Z'; str[0]++)
-        graph.addVertex(str);
-
-    auto vertices = graph.allVertices();
-    /*
-    std::random_shuffle(vertices.begin(), vertices.end());
-    auto sz = vertices.size() % 2 == 0 ? vertices.size() : vertices.size() - 1;
-
-    for (unsigned i = 0; i < sz; i += 2)
-    {
-        graph.addEdge(vertices[i], vertices[i+1], i);
-        graph.addEdge(vertices[i], vertices[std::rand() % vertices.size()], i + 1);
-    }
-    */
-
-    int idx = 0;
-    for (auto& vertex : vertices)
-    {
-        for (int i = 0, n = std::rand() % 5; i < n; ++i)
-        {
-            auto otherVert = vertices[std::rand() % vertices.size()];
-            auto possibleEdge = graph.isEdgeBetween(vertex, otherVert);
-
-            if (possibleEdge.has_value())
-            {
-                i -= 1;
-                std::cout << "edge already exist!\n";
-                continue;
-            }
-
-
-            graph.addEdge(vertex, otherVert, idx);
-            idx += 1;
-        }
-    }
+    for (const auto& val : set)
+        std::cout << val << " ";
+    std::cout << '\n';
 }
 
 int main()
 {
     std::srand(std::time(nullptr));
 
-    {
-        GraphList<std::string, int> graph;
+    GraphList<int, int> graph;
+    std::ifstream input_file("test_input.txt");
+    std::ofstream out_file("graph.gv");
 
-        auto vert1 = graph.addVertex("A");
-        auto vert2 = graph.addVertex("B");
-        auto vert3 = graph.addVertex("C");
-
-        auto edge = graph.addEdge(vert1, vert2, 42);
-        auto edge2 = graph.addEdge(vert2, vert3, 84);
-        auto edge3 = graph.addEdge(vert1, vert3, 63);
-
-        logGraph(graph);
-
-        std::cout << std::endl;
-
-        graph.removeVertex(vert2);
-
-        logGraph(graph);
-    }
-
-    std::cout << std::endl;
+    loadGraph(input_file, graph);
+    logIntoGraphVizFormat(out_file, graph);
 
     {
-        GraphMatrix<std::string, int> graph;
+        GraphList<int, int> graph;
+        auto v1 = graph.addVertex(0);
+        auto v2 = graph.addVertex(1);
+        auto v3 = graph.addVertex(2);
+        graph.addEdge(v1, v2, 42);
+        graph.addEdge(v1, v3, 69);
+        graph.addEdge(v2, v3, 80);
+        //graph.addEdge(v3, v1, 13);
 
-        auto vert1 = graph.addVertex("X");
-        auto vert2 = graph.addVertex("Y");
-        auto vert3 = graph.addVertex("Z");
-
-        auto edge = graph.addEdge(vert1, vert2, 16);
-        auto edge2 = graph.addEdge(vert2, vert3, -5);
-        auto edge3 = graph.addEdge(vert1, vert3, 420);
-
-        logGraph(graph);
-    }
-
-    {
-        GraphList<std::string, int> graph;
-        fillGraph(graph);
-        std::ofstream file("graph.gv");
-        logIntoGraphVizFormat(file, graph);
-    }
-
-    {
-        GraphMatrix<std::string, int> graph;
-        fillGraph(graph);
-        std::ofstream file("graph2.gv");
-        logIntoGraphVizFormat(file, graph);
+        std::cout << isCycle(graph.allEdges(), graph.verticesSize()) << std::endl;
     }
 }

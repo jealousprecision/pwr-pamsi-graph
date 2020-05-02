@@ -36,6 +36,7 @@ public:
 
         /////////////////////////////////////////////////////
 
+        unsigned idx;
         nostd::List<Edge> edgesOut;
         nostd::List<Edge> edgesIn;
         VertexLabel data;
@@ -50,12 +51,12 @@ public:
 
         VertexLabel& operator*() const { return vertexData_->data; }
         VertexLabel* operator->() const { return &vertexData_->data; }
-
         bool operator==(const Vertex& other) const { return vertexData_ == other.vertexData_; }
         bool operator!=(const Vertex& other) const { return vertexData_ != other.vertexData_; }
 
         const nostd::List<Edge>& edgesOut() const { return vertexData_->edgesOut; }
         const nostd::List<Edge>& edgesIn() const { return vertexData_->edgesIn; }
+        unsigned getIdx() const { return vertexData_->idx; }
 
         friend class GraphList<VertexLabel, EdgeLabel>;
 
@@ -162,6 +163,11 @@ public:
         return result;
     }
 
+    unsigned verticesSize()
+    {
+        return vertices_.size();
+    }
+
     nostd::Vector<Edge> allEdges()
     {
         nostd::Vector<Edge> result;
@@ -170,6 +176,11 @@ public:
             result.emplace_back(it);
 
         return result;
+    }
+
+    unsigned edgesSize()
+    {
+        return edges_.size();
     }
 
     std::optional<Edge> isEdgeBetween(Vertex from, Vertex to)
@@ -190,6 +201,7 @@ protected:
     Vertex initLastVertex_()
     {
         auto lastVertex = std::prev(vertices_.end());
+        lastVertex->idx = vertices_.size() - 1;
         return Vertex{lastVertex};
     }
 
