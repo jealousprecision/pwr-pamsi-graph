@@ -7,14 +7,7 @@
 #include <map>
 #include <set>
 
-#include <nostd/DisjointSet.hpp>
-
-template<typename GraphType>
-struct VertexWeight
-{
-    unsigned weight;
-    typename GraphType::Vertex vertex;
-};
+#include <GraphList.hpp>
 
 int getMinIdx(const nostd::Vector<int>& idxToCost, bool traversedVertices[])
 {
@@ -103,58 +96,56 @@ GraphList<std::tuple<unsigned, int>, int> getGraphFromDijkstraOutput(
     return result;
 }
 
-template<typename GraphType>
-std::tuple<nostd::Vector<int>, nostd::Vector<int>, bool>  // vertex idx to cost, vertex idx to parent idx, does graph contain negative edge
-BellmanFord(GraphType& graph, typename GraphType::Vertex source)
+template<typename Iter, typename Comp>
+void push_down(Iter rootIt, size_t size, size_t idx, Comp comp)
 {
+    auto largest = rootIt;
+    auto largestIdx = idx;
+    auto end = std::next(rootIt, size);
+
+    auto lIt = 2 * idx + 1 < size ? std::next(rootIt, idx + 1) : end;
+    auto rIt = 2 * idx + 2 < size ? std::next(lIt, 1) : end;
+
+    if (lIt != end && comp(*largest, *lIt))
+    {
+        largest = lIt;
+        largestIdx = 2 * idx + 1;
+    }
+
+    if (rIt != end && comp(*largest, *rIt))
+    {
+        largest = rIt;
+        largestIdx = 2 * idx + 2;
+    }
+
+    if (largestIdx != idx)
+    {
+        std::swap(*largest, *rootIt);
+        push_down(largest, size, largestIdx, comp);
+    }
+}
+
+template<typename GraphType>
+struct VertexWeight
+{
+    int weight;
+    typename GraphType::Vertex vertex;
+};
+
+template<typename VertexLabel, typename EdgeLabel>
+std::tuple<nostd::Vector<int>, nostd::Vector<int>> // vertex idx to cost, vertex idx to parent idx
+Dijkstra(GraphList<VertexLabel, EdgeLabel>& graph, typename GraphList<VertexLabel, EdgeLabel>::Vertex source)
+{
+    using VertexWeightTyped = VertexWeight<GraphList<VertexLabel, EdgeLabel>>;
     constexpr auto infinity = std::numeric_limits<int>::max();
+    auto greaterByWeight = [](const VertexWeightTyped& lhs, const VertexWeightTyped& rhs) { return lhs.weight > rhs.weight; };
+
     auto vertices = graph.allVertices();
+    nostd::Vector<VertexWeightTypes> verticesWeight;
 
-    nostd::Vector<int> idxToCost(vertices.size(), infinity);
-    nostd::Vector<int> idxToParent(vertices.size(), -1);
-
-    idxToCost[source.getIdx()] = 0;
-
-    auto edges = graph.allEdges();
-    std::random_shuffle(edges.begin(), edges.end());
-    for (unsigned i = 0; i <  graph.verticesSize() - 1; ++i)
-    {
-        for (unsigned j = 0; j < graph.edgesSize(); ++j)
+    std::transform(vertices.begin(), vertices.end(), std::back_inserter(verticesWeight),
+        [](const auto& vertex)
         {
-            auto& edge = edges[j];
-
-            if (idxToCost[edge.from().getIdx()] == infinity)
-                continue;
-
-            auto previous = idxToCost[edge.to().getIdx()];
-            auto current = idxToCost[edge.from().getIdx()] + *edge;
-            if (current < previous)
-            {
-                idxToCost[edge.to().getIdx()] = current;
-                idxToParent[edge.to().getIdx()] = edge.from().getIdx();
-            }
-        }
-        std::cout << "Bellman iteration " << i << ": ";
-        for (auto weight : idxToCost)
-            std::cout << weight << ", ";
-        std::cout << std::endl;
-    }
-
-    // check for negative weights
-    bool negativeWeights = false;
-    for (auto edge : edges)
-    {
-        if (*edge < 0)
-            std::cout << "flag1" << std::endl;
-
-        auto previous = idxToCost[edge.to().getIdx()];
-        auto current = idxToCost[edge.from().getIdx()] + *edge;
-        if (previous > current)
-        {
-            negativeWeights = true;
-            break;
-        }
-    }
-
-    return std::make_tuple(std::move(idxToCost), std::move(idxToParent), negativeWeights);
+            return VertexWeightTyped{infinity, vertex};
+        });
 }

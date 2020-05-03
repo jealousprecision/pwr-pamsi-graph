@@ -77,9 +77,6 @@ public:
         return *this;
     }
 
-    //void operator=(const TestObject&) = delete;
-    //void operator=(TestObject&&) = delete;
-
     void set(int i)
     {
         *data_ = i;

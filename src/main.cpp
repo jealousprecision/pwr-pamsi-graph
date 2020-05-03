@@ -10,14 +10,14 @@
 
 #include <nostd/Vector.hpp>
 #include <nostd/List.hpp>
-#include <nostd/DisjointSet.hpp>
 #include <TestObject.hpp>
 #include <GraphList.hpp>
 #include <GraphMatrix.hpp>
 #include <GraphUtils.hpp>
 #include <GraphAlgo.hpp>
 
-std::ostream& operator<<(std::ostream& os, std::tuple<unsigned, int> idxCost)
+template<typename T1, typename T2>
+std::ostream& operator<<(std::ostream& os, std::tuple<T1, T2> idxCost)
 {
     return os << std::get<0>(idxCost) << ", " << std::get<1>(idxCost);
 }
