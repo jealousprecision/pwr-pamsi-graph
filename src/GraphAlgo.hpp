@@ -16,9 +16,9 @@ struct VertexWeight
     typename GraphType::Vertex vertex;
 };
 
-int getMinIdx(const nostd::Vector<unsigned>& idxToCost, bool traversedVertices[])
+int getMinIdx(const nostd::Vector<int>& idxToCost, bool traversedVertices[])
 {
-    unsigned minVal = std::numeric_limits<unsigned>::max();
+    int minVal = std::numeric_limits<int>::max();
     int minIdx = -1;
 
     for (unsigned i = 0; i < idxToCost.size(); ++i)
@@ -43,13 +43,13 @@ bool all_of(bool* begin, bool *end)
 }
 
 template<typename GraphType>
-std::tuple<nostd::Vector<unsigned>, nostd::Vector<int>>  // vertex idx to cost, vertex idx to parent idx
+std::tuple<nostd::Vector<int>, nostd::Vector<int>>  // vertex idx to cost, vertex idx to parent idx
 Dijkstra(GraphType& graph, typename GraphType::Vertex source)
 {
-    constexpr auto infinity = std::numeric_limits<unsigned>::max();
+    constexpr auto infinity = std::numeric_limits<int>::max();
     auto vertices = graph.allVertices();
 
-    nostd::Vector<unsigned> idxToCost(vertices.size(), infinity);
+    nostd::Vector<int> idxToCost(vertices.size(), infinity);
     nostd::Vector<int> vertexIdxToParentIdx(vertices.size(), -1);
 
     bool traversedVertices[vertices.size()];
@@ -61,7 +61,7 @@ Dijkstra(GraphType& graph, typename GraphType::Vertex source)
     {
         auto minIdx = getMinIdx(idxToCost, traversedVertices);
 
-        if (minIdx == -1)  // disconnected graph
+        if (minIdx == -1)  // disconnected graph, minIdx not found
             break;
 
         for (auto edge : vertices[minIdx].edgesOut())
@@ -82,15 +82,14 @@ Dijkstra(GraphType& graph, typename GraphType::Vertex source)
         traversedVertices[minIdx] = true;
     }
 
-    //return {idxToCost, vertexIdxToParentIdx};
-    return std::make_tuple(idxToCost, vertexIdxToParentIdx);
+    return std::make_tuple(std::move(idxToCost), std::move(vertexIdxToParentIdx));
 }
 
-GraphList<std::tuple<unsigned, unsigned>, int> getGraphFromDijkstraOutput(
-    const nostd::Vector<unsigned>& vertexIdxToCost,
+GraphList<std::tuple<unsigned, int>, int> getGraphFromDijkstraOutput(
+    const nostd::Vector<int>& vertexIdxToCost,
     const nostd::Vector<int>& vertexIdxToParentIdx)
 {
-    GraphList<std::tuple<unsigned, unsigned>, int> result;
+    GraphList<std::tuple<unsigned, int>, int> result;
 
     for (unsigned idx = 0; idx < vertexIdxToCost.size(); ++idx)
         result.addVertex(std::make_tuple(idx, vertexIdxToCost[idx]));
@@ -105,20 +104,57 @@ GraphList<std::tuple<unsigned, unsigned>, int> getGraphFromDijkstraOutput(
 }
 
 template<typename GraphType>
-std::tuple<nostd::Vector<unsigned>, nostd::Vector<int>>  // vertex idx to cost, vertex idx to parent idx
+std::tuple<nostd::Vector<int>, nostd::Vector<int>, bool>  // vertex idx to cost, vertex idx to parent idx, does graph contain negative edge
 BellmanFord(GraphType& graph, typename GraphType::Vertex source)
 {
-    constexpr auto infinity = std::numeric_limits<unsigned>::max();
+    constexpr auto infinity = std::numeric_limits<int>::max();
     auto vertices = graph.allVertices();
 
-    nostd::Vector<unsigned> idxToCost(vertices.size(), infinity);
+    nostd::Vector<int> idxToCost(vertices.size(), infinity);
+    nostd::Vector<int> idxToParent(vertices.size(), -1);
 
     idxToCost[source.getIdx()] = 0;
 
-    for (unsigned idx = 1; idx < vertices.size(); ++idx)
+    auto edges = graph.allEdges();
+    std::random_shuffle(edges.begin(), edges.end());
+    for (unsigned i = 0; i <  graph.verticesSize() - 1; ++i)
     {
+        for (unsigned j = 0; j < graph.edgesSize(); ++j)
+        {
+            auto& edge = edges[j];
 
+            if (idxToCost[edge.from().getIdx()] == infinity)
+                continue;
+
+            auto previous = idxToCost[edge.to().getIdx()];
+            auto current = idxToCost[edge.from().getIdx()] + *edge;
+            if (current < previous)
+            {
+                idxToCost[edge.to().getIdx()] = current;
+                idxToParent[edge.to().getIdx()] = edge.from().getIdx();
+            }
+        }
+        std::cout << "Bellman iteration " << i << ": ";
+        for (auto weight : idxToCost)
+            std::cout << weight << ", ";
+        std::cout << std::endl;
     }
 
-    throw std::runtime_error("Not implemented yet");
+    // check for negative weights
+    bool negativeWeights = false;
+    for (auto edge : edges)
+    {
+        if (*edge < 0)
+            std::cout << "flag1" << std::endl;
+
+        auto previous = idxToCost[edge.to().getIdx()];
+        auto current = idxToCost[edge.from().getIdx()] + *edge;
+        if (previous > current)
+        {
+            negativeWeights = true;
+            break;
+        }
+    }
+
+    return std::make_tuple(std::move(idxToCost), std::move(idxToParent), negativeWeights);
 }

@@ -17,7 +17,7 @@
 #include <GraphUtils.hpp>
 #include <GraphAlgo.hpp>
 
-std::ostream& operator<<(std::ostream& os, std::tuple<unsigned, unsigned> idxCost)
+std::ostream& operator<<(std::ostream& os, std::tuple<unsigned, int> idxCost)
 {
     return os << std::get<0>(idxCost) << ", " << std::get<1>(idxCost);
 }
@@ -34,12 +34,28 @@ int main()
     logIntoGraphVizFormat(out_file, graph);
 
     auto vertices = graph.allVertices();
-    auto result = Dijkstra(graph, vertices[0]);
-    std::cout << "Vertex\tDistance from source\n";
-    for (unsigned idx = 0; idx < std::get<0>(result).size(); ++idx)
-        std::cout << *vertices[idx] << '\t' << std::get<0>(result)[idx] << '\n';
+    {
+        auto resultDij = Dijkstra(graph, vertices[0]);
+        std::cout << "Vertex\tDistance from source\n";
+        for (unsigned idx = 0; idx < std::get<0>(resultDij).size(); ++idx)
+            std::cout << *vertices[idx] << '\t' << std::get<0>(resultDij)[idx] << '\n';
 
-    auto graphDijkstra = getGraphFromDijkstraOutput(std::get<0>(result), std::get<1>(result));
-    std::ofstream dijkstraOut("dijkstraOut.gv");
-    logIntoGraphVizFormat(dijkstraOut, graphDijkstra);
+        auto graphDijkstra = getGraphFromDijkstraOutput(std::get<0>(resultDij), std::get<1>(resultDij));
+        std::ofstream dijkstraOut("dijkstraOut.gv");
+        logIntoGraphVizFormat(dijkstraOut, graphDijkstra);
+    }
+
+    std::cout << std::endl;
+
+    {
+        auto resultBell = BellmanFord(graph, vertices[0]);
+        for (unsigned idx = 0; idx < std::get<0>(resultBell).size(); ++idx)
+            std::cout << *vertices[idx] << '\t' << std::get<0>(resultBell)[idx] << '\n';
+
+        std::cout << "negative weight-cycles: " << std::get<2>(resultBell) << std::endl;
+
+        auto graphBell = getGraphFromDijkstraOutput(std::get<0>(resultBell), std::get<1>(resultBell));
+        std::ofstream bellOut("bellOut.gv");
+        logIntoGraphVizFormat(bellOut, graphBell);
+    }
 }

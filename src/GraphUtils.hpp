@@ -73,7 +73,7 @@ void loadGraph(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator tr
 
     auto vertices = graph.allVertices();
 
-    unsigned startVertex, endVertex, weight;
+    int startVertex, endVertex, weight;
     while (is >> startVertex >> endVertex >> weight)
         graph.addEdge(vertices[startVertex], vertices[endVertex], weight);
 }
