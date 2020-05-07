@@ -22,40 +22,29 @@ std::ostream& operator<<(std::ostream& os, std::tuple<T1, T2> idxCost)
     return os << std::get<0>(idxCost) << ", " << std::get<1>(idxCost);
 }
 
+void test()
+{
+    GraphMatrix<std::string, unsigned> graph;co
+    fillGraph(graph);
+
+    auto result = Dijkstra(graph, 0);
+}
+
 int main()
 {
     std::srand(std::time(nullptr));
 
-    GraphList<int, int> graph;
-    std::ifstream input_file("test_input.txt");
-    std::ofstream out_file("graph.gv");
+    GraphMatrix<VoidType, unsigned> graph;
+    //fillGraph(graph);
+    std::ifstream input("graph.input");
+    loadGraph2Way(input, graph);
 
-    loadGraph(input_file, graph);
-    logIntoGraphVizFormat(out_file, graph);
+    std::ofstream file("graph.gv");
+    logIntoGraphVizFormat(file, graph);
 
-    auto vertices = graph.allVertices();
-    {
-        auto resultDij = Dijkstra(graph, vertices[0]);
-        std::cout << "Vertex\tDistance from source\n";
-        for (unsigned idx = 0; idx < std::get<0>(resultDij).size(); ++idx)
-            std::cout << *vertices[idx] << '\t' << std::get<0>(resultDij)[idx] << '\n';
+    auto result = Dijkstra(graph, 0);
 
-        auto graphDijkstra = getGraphFromDijkstraOutput(std::get<0>(resultDij), std::get<1>(resultDij));
-        std::ofstream dijkstraOut("dijkstraOut.gv");
-        logIntoGraphVizFormat(dijkstraOut, graphDijkstra);
-    }
-
-    std::cout << std::endl;
-
-    {
-        auto resultBell = BellmanFord(graph, vertices[0]);
-        for (unsigned idx = 0; idx < std::get<0>(resultBell).size(); ++idx)
-            std::cout << *vertices[idx] << '\t' << std::get<0>(resultBell)[idx] << '\n';
-
-        std::cout << "negative weight-cycles: " << std::get<2>(resultBell) << std::endl;
-
-        auto graphBell = getGraphFromDijkstraOutput(std::get<0>(resultBell), std::get<1>(resultBell));
-        std::ofstream bellOut("bellOut.gv");
-        logIntoGraphVizFormat(bellOut, graphBell);
-    }
+    std::cout << "Vertex\tCost\n";
+    for (unsigned vertex = 0; vertex < std::get<0>(result).size(); ++vertex)
+        std::cout << vertex << '\t' << std::get<0>(result)[vertex] << '\n';
 }

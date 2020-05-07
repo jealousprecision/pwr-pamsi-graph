@@ -43,13 +43,16 @@ public:
         return cols_;
     }
 
-    void growByOne()
+    void growByOne(const T& value)
     {
         data_.resize(data_.size() + 1);
+        std::fill(data_.back().begin(), data_.back().end(), value);
 
-        auto oldSize = cols();
         for (auto& vec : data_)
-            vec.resize(oldSize + 1);
+        {
+            vec.resize(cols_ + 1);
+            vec.back() = value;
+        }
 
         rows_ += 1;
         cols_ += 1;

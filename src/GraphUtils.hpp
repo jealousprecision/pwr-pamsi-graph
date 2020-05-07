@@ -5,49 +5,49 @@
 #include <iostream>
 #include <string>
 
-template<typename GraphType>
-void logGraph(GraphType& graph)
+template<typename V, typename E>
+void logGraph(GraphMatrix<V, E>& graph)
 {
-    for (auto edge : graph.allEdges())
-        std::cout << *edge.from() << " -(" << *edge << ")-> " << *edge.to() << std::endl;
+    for (unsigned from = 0; from < graph.verticesSize(); ++from)
+        for (unsigned to = 0; to < graph.verticesSize(); ++to)
+            if (auto* edge = graph.getEdgeBetween(from, to))
+                std::cout << graph.getVertex(from) << " -("
+                    << *edge << ")-> " << graph.getVertex(to) << std::endl;
 }
 
-template<typename GraphType>
-void logIntoGraphVizFormat(std::ostream& os, GraphType& graph)
+template<typename V, typename E>
+void logIntoGraphVizFormat(std::ostream& os, GraphMatrix<V, E>& graph)
 {
-    os << "digraph G{\n";
-    for (auto edge : graph.allEdges())
-        os << "\t\"" << *edge.from() << "\" -> \"" << *edge.to() << "\" [label=\"" << *edge << "\"]\n";
+    os << "digraph G {\n";
+
+    for (unsigned from = 0; from < graph.verticesSize(); ++from)
+        for (unsigned to = 0; to < graph.verticesSize(); ++to)
+            if (auto* edge = graph.getEdgeBetween(from, to))
+                os << "\t\""
+                    << graph.getVertex(from) << "\" -> \""
+                    << graph.getVertex(to) << "\""
+                    << " [label=\"" << *edge << "\"]\n";
+
     os << "}" << std::endl;
 }
 
-template<typename GraphType>
-void fillGraph(GraphType& graph)
+template<typename V, typename E>
+void fillGraph(GraphMatrix<V, E>& graph)
 {
-    std::string str = "A";
-    for(; str[0] <= 'Z'; str[0]++)
-        graph.addVertex(str);
+    std::string s("A");
+    for (; s[0] <= 'Z'; s[0]++)
+        graph.addVertex(s);
 
-    auto vertices = graph.allVertices();
-
-    int idx = 0;
-    for (auto& vertex : vertices)
+    for (unsigned from = 0; from < graph.verticesSize(); ++from )
     {
-        for (int i = 0, n = std::rand() % 5; i < n; ++i)
+        for (unsigned i = 0, n = std::rand() % 5 + 1; i < n; ++i)
         {
-            auto otherVert = vertices[std::rand() % vertices.size()];
-            auto possibleEdge = graph.isEdgeBetween(vertex, otherVert);
+            unsigned to;
+            do {
+                to = std::rand() % graph.verticesSize();
+            } while (graph.getEdgeBetween(from, to));
 
-            if (possibleEdge.has_value())
-            {
-                i -= 1;
-                std::cout << "edge already exist!\n";
-                continue;
-            }
-
-
-            graph.addEdge(vertex, otherVert, idx);
-            idx += 1;
+            graph.addEdge(from, to, std::rand() % std::numeric_limits<uint16_t>::max());
         }
     }
 }
@@ -71,9 +71,26 @@ void loadGraph(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator tr
     for (unsigned idx = 0; idx < nOfVertices; ++idx)
         graph.addVertex(translate(idx));
 
-    auto vertices = graph.allVertices();
+    int startVertex, endVertex, weight;
+    while (is >> startVertex >> endVertex >> weight)
+        graph.addEdge(startVertex, endVertex, weight);
+}
+
+template<
+    typename GraphType,
+    typename IdxToVertexLabelTranslator = VertLabelDefaultTranslator>
+void loadGraph2Way(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator translate = VertLabelDefaultTranslator())
+{
+    unsigned nOfEdges, nOfVertices, treeStartVertex;
+    is >> nOfEdges >> nOfVertices >> treeStartVertex;
+
+    for (unsigned idx = 0; idx < nOfVertices; ++idx)
+        graph.addVertex(translate(idx));
 
     int startVertex, endVertex, weight;
     while (is >> startVertex >> endVertex >> weight)
-        graph.addEdge(vertices[startVertex], vertices[endVertex], weight);
+    {
+        graph.addEdge(startVertex, endVertex, weight);
+        graph.addEdge(endVertex, startVertex, weight);
+    }
 }
