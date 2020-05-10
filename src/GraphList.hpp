@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <nostd/Vector.hpp>
 #include <VoidType.hpp>
 
@@ -86,6 +88,17 @@ public:
         return edges_[edge].to_;
     }
 
+    bool isEdgeBetween(unsigned srcVert, unsigned destVert)
+    {
+        const auto& edgesOut = vertices_[srcVert].edgesOut_;
+
+        return std::any_of(edgesOut.begin(), edgesOut.end(),
+            [&](auto edge)
+            {
+                return this->getVertexTo(edge) == destVert;
+            });
+    }
+
 protected:
     nostd::Vector<Vertex> vertices_;
     nostd::Vector<Edge> edges_;
@@ -122,6 +135,12 @@ public:
     };
 
     /////////////////////////////////////////////////////////////////
+
+    GraphList() = default;
+    GraphList(unsigned vertices) :
+        vertices_(vertices)
+    {}
+
 
     unsigned addVertex()
     {
@@ -178,6 +197,17 @@ public:
     unsigned getVertexTo(unsigned edge) const
     {
         return edges_[edge].to_;
+    }
+
+    bool isEdgeBetween(unsigned srcVert, unsigned destVert)
+    {
+        const auto& edgesOut = vertices_[srcVert].edgesOut_;
+
+        return std::any_of(edgesOut.begin(), edgesOut.end(),
+            [&](auto edge)
+            {
+                return getVertexTo(edge) == destVert;
+            });
     }
 
     /////////////////////////////////////////////////////////////////

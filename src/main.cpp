@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <chrono>
 
 #include <nostd/Vector.hpp>
 #include <nostd/List.hpp>
@@ -40,20 +41,18 @@ void testMatrix(const std::string& outputName)
 
 int main()
 {
-    GraphList<VoidType, unsigned> graph;
-    std::ifstream input("graph.input");
-    loadGraph(input, graph);
+    {
+        GraphMatrix<VoidType, unsigned> graph(1000);
+        fillGraph(graph, 0.5);
 
-    std::ofstream graphOutFile("graph.gv");
-    logIntoGraphVizFormat(graphOutFile, graph);
+        auto start = std::chrono::steady_clock::now();
+        Dijkstra(graph, 0);
+        auto end = std::chrono::steady_clock::now();
 
-    auto result = Dijkstra(graph, 0);
+        using std::cout, std::endl;
 
-    std::cout << "Vertex\tCost\n";
-    for (unsigned vertex = 0; vertex < std::get<0>(result).size(); ++vertex)
-        std::cout << vertex << '\t' << std::get<0>(result)[vertex] << '\n';
-
-    auto dijkstraTree = getGraphFromDijsktraOutput(std::get<0>(result), std::get<1>(result));
-    std::ofstream treeOutFile("tree.gv");
-    logIntoGraphVizFormat(treeOutFile, dijkstraTree);
+        cout << "Elapsed time in milliseconds : "
+            << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+            << " ms" << endl;
+    }
 }

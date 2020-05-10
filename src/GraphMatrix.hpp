@@ -42,6 +42,11 @@ public:
         return vertices_[id];
     }
 
+    bool isEdgeBetween(unsigned srcVert, unsigned destVert)
+    {
+        return adjacencyMatrix_(srcVert, destVert);
+    }
+
 protected:
     nostd::Vector<VertexLabel> vertices_;
     nostd::List<EdgeLabel> edges_;
@@ -54,6 +59,10 @@ class GraphMatrix<VoidType, EdgeLabel>
 public:
     GraphMatrix() :
         adjacencyMatrix_(0, 0)
+    {}
+
+    GraphMatrix(unsigned vertices) :
+        adjacencyMatrix_(vertices, vertices)
     {}
 
     unsigned addVertex()
@@ -87,6 +96,11 @@ public:
     unsigned getVertex(unsigned id) const
     {
         return id;
+    }
+
+    bool isEdgeBetween(unsigned srcVert, unsigned destVert)
+    {
+        return adjacencyMatrix_(srcVert, destVert);
     }
 
 protected:

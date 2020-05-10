@@ -61,26 +61,75 @@ void logIntoGraphVizFormat(std::ostream& os, GraphList<V, E>& graph)
     os << "}" << std::endl;
 }
 
-template<typename V, typename E>
-void fillGraph(GraphMatrix<V, E>& graph)
+constexpr auto MAXIMUM_WEIGHT = 50;
+constexpr auto EPSILON = 0.0001;
+
+bool isCloseTo(double wanted, double val)
 {
-    std::string s("A");
-    for (; s[0] <= 'Z'; s[0]++)
-        graph.addVertex(s);
+    return wanted - EPSILON < val && val < wanted + EPSILON;
+}
 
-    for (unsigned from = 0; from < graph.verticesSize(); ++from )
+template<typename E>
+void fillGraph(GraphMatrix<VoidType, E>& graph, double graphDensity)
+{
+    if (isCloseTo(1.0, graphDensity))
     {
-        for (unsigned i = 0, n = std::rand() % 5 + 1; i < n; ++i)
-        {
-            unsigned to;
-            do {
-                to = std::rand() % graph.verticesSize();
-            } while (graph.getEdgeBetween(from, to));
+        fillGraphFull(graph);
+        return;
+    }
 
-            graph.addEdge(from, to, std::rand() % std::numeric_limits<uint16_t>::max());
-        }
+    auto vertices = graph.verticesSize();
+    unsigned nOfEdges = graphDensity * vertices * (vertices - 1);
+
+    for (auto i = 0u; i < nOfEdges; ++i)
+    {
+        unsigned src, dest;
+        do {
+            src = std::rand() % vertices;
+            dest = std::rand() % vertices;
+        } while(graph.isEdgeBetween(src, dest));
+
+        graph.addEdge(src, dest, std::rand() % MAXIMUM_WEIGHT);
     }
 }
+
+template<typename E>
+void fillGraph(GraphList<VoidType, E>& graph, double graphDensity)
+{
+    if (isCloseTo(1.0, graphDensity))
+    {
+        fillGraphFull(graph);
+        return;
+    }
+
+    auto vertices = graph.verticesSize();
+    unsigned nOfEdges = graphDensity * vertices * (vertices - 1);
+
+    Matrix<bool> adjacencyMatrix(vertices, vertices);
+    adjacencyMatrix.fill(false);
+
+    for (auto i = 0u; i < nOfEdges; ++i)
+    {
+        unsigned src, dest;
+        do {
+            src = std::rand() % vertices;
+            dest = std::rand() % vertices;
+        } while(adjacencyMatrix(src, dest));
+
+        adjacencyMatrix(src, dest) = true;
+        graph.addEdge(src, dest, std::rand() % MAXIMUM_WEIGHT);
+    }
+}
+
+template<typename GraphType>
+void fillGraphFull(GraphType& graph)
+{
+    for (auto src = 0u; src < graph.verticesSize(); ++src)
+        for (auto dest = 0u; dest < graph.verticesSize(); ++dest)
+            if (src != dest)
+                graph.addEdge(src, dest, std::rand() % MAXIMUM_WEIGHT);
+}
+
 
 struct VertLabelDefaultTranslator
 {

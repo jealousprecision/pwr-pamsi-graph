@@ -58,6 +58,12 @@ public:
         cols_ += 1;
     }
 
+    void fill(const T& value)
+    {
+        for (auto& vec : data_)
+            std::fill(vec.begin(), vec.end(), value);
+    }
+
 protected:
     nostd::Vector<nostd::Vector<T>> data_;
     unsigned rows_, cols_;
