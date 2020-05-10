@@ -51,7 +51,12 @@ public:
     unsigned addEdge(unsigned from, unsigned to, const EdgeLabel& edge)
     {
         edges_.emplace_back(from, to, edge);
-        return edges_.size() - 1;
+
+        auto idx = edges_.size() - 1;
+        vertices_[from].edgesOut_.push_back(idx);
+        vertices_[to].edgesIn_.push_back(idx);
+
+        return idx;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -97,6 +102,11 @@ public:
             {
                 return this->getVertexTo(edge) == destVert;
             });
+    }
+
+    unsigned verticesSize() const
+    {
+        return vertices_.size();
     }
 
 protected:
@@ -215,6 +225,12 @@ public:
     unsigned verticesSize() const
     {
         return vertices_.size();
+    }
+
+    void clear()
+    {
+        vertices_.clear();
+        edges_.clear();
     }
 
 protected:

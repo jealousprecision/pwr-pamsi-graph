@@ -96,7 +96,8 @@ public:
     Vector<T>& operator=(const Vector<T>& other)
     {
         reserveGrowTo_(other.realSize_());
-        std::copy(other.begin(), other.end(), begin());
+        std::copy(other.begin(), other.end(), std::back_inserter(*this));
+        return *this;
     }
 
     Vector<T>& operator=(Vector<T>&& other)
@@ -109,6 +110,8 @@ public:
         realEnd_ = other.realEnd_;
 
         other.first_ = other.end_ = other.realEnd_ = nullptr;
+
+        return *this;
     }
 
     ~Vector()
@@ -246,6 +249,12 @@ public:
         {
             growTo_(newSize);
         }
+    }
+
+    void clear()
+    {
+        destructorOnRange_(first_, end_);
+        end_ = first_;
     }
 
 protected:

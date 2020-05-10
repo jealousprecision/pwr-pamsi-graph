@@ -281,9 +281,9 @@ auto Dijkstra(GraphList<V, E>& graph, unsigned source) -> std::tuple<nostd::Vect
 }
 
 auto getGraphFromDijsktraOutput(const nostd::Vector<unsigned>& idxToCost, const nostd::Vector<int>& idxToParent)
-    -> GraphMatrix<std::tuple<unsigned, unsigned>, int>  // <(idx, cost), placeholder>
+    -> GraphList<std::tuple<unsigned, unsigned>, int>  // <(idx, cost), placeholder>
 {
-    GraphMatrix<std::tuple<unsigned, unsigned>, int> graph;
+    GraphList<std::tuple<unsigned, unsigned>, int> graph;
 
     for (unsigned i = 0; i < idxToCost.size(); ++i)
         graph.addVertex(std::make_tuple(i, idxToCost[i]));
@@ -293,4 +293,18 @@ auto getGraphFromDijsktraOutput(const nostd::Vector<unsigned>& idxToCost, const 
             graph.addEdge(idxToParent[i], i, 0);
 
     return graph;
+}
+
+template<typename V, typename E>
+void saveDijkstraTreeInPwrFormat(std::ostream& os, GraphList<V, E>& graph, unsigned source, nostd::Vector<unsigned> parents)
+{
+    os << std::get<0>(graph.getVertex(source)) << "\t" << std::get<1>(graph.getVertex(source)) << "\t(";
+    for (auto parent : parents)
+        os << parent << ", ";
+    os << ")\n";
+
+    parents.push_back(std::get<0>(graph.getVertex(source)));
+
+    for (auto edge : graph.getEdgesOut(source))
+        saveDijkstraTreeInPwrFormat(os, graph, graph.getVertexTo(edge), parents);
 }
