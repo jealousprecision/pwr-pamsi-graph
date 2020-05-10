@@ -17,42 +17,67 @@
 #include <GraphUtils.hpp>
 #include <GraphAlgo.hpp>
 
-void testMatrix(const std::string& outputName)
+using namespace std;
+
+// Returns in ms
+template<typename Func>
+double timeLambda(const Func& func)
 {
-    GraphMatrix<VoidType, unsigned> graph;
-    std::ifstream input("graph.input");
-    loadGraph2Way(input, graph);
+    auto start = chrono::steady_clock::now();
+    func();
+	auto end = chrono::steady_clock::now();
 
-    std::ofstream file(outputName);
-    logIntoGraphVizFormat(file, graph);
-    file.close();
-
-    auto result = Dijkstra(graph, 0);
-
-    std::cout << "Vertex\tCost\n";
-    for (unsigned vertex = 0; vertex < std::get<0>(result).size(); ++vertex)
-        std::cout << vertex << '\t' << std::get<0>(result)[vertex] << '\n';
-
-    auto dijsktraTree = getGraphFromDijsktraOutput(std::get<0>(result), std::get<1>(result));
-    file.open("tree.gv");
-    logIntoGraphVizFormat(file, dijsktraTree);
-    file.close();
+    return chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000.0;
 }
+
+template<typename GraphType>
+class Test
+{
+public:
+    Test(unsigned tests, unsigned vertices, double density) :
+        tests_(tests), vertices_(vertices), density_(density)
+    {}
+
+    void operator()() const
+    {
+        for (auto i = 0u; i < tests_; ++i)
+        {
+            GraphType graph(vertices_);
+            fillGraph(graph, density_);
+
+            auto start = chrono::steady_clock::now();
+            auto result = Dijkstra(graph, 0);
+	        auto end = chrono::steady_clock::now();
+
+            static bool done = false;
+            if (!done)
+            {
+                done = true;
+
+                auto tree = getGraphFromDijsktraOutput(std::get<0>(result), std::get<1>(result));
+                std::ofstream file("graph.gv");
+                logIntoGraphVizFormat(file, tree);
+            }
+
+            double msTime = chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000.0;
+            testTimes_.push_back(msTime);
+        }
+    }
+
+    const auto& getTimes() const { return testTimes_; }
+
+protected:
+    unsigned tests_, vertices_;
+    double density_;
+
+    mutable nostd::Vector<double> testTimes_;
+};
 
 int main()
 {
-    {
-        GraphMatrix<VoidType, unsigned> graph(1000);
-        fillGraph(graph, 0.5);
+    Test<GraphMatrix<VoidType, unsigned>> test(1000, 100, 1.0\);
 
-        auto start = std::chrono::steady_clock::now();
-        Dijkstra(graph, 0);
-        auto end = std::chrono::steady_clock::now();
-
-        using std::cout, std::endl;
-
-        cout << "Elapsed time in milliseconds : "
-            << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-            << " ms" << endl;
-    }
+    test();
+    for (auto el : test.getTimes())
+        std::cout << el << std::endl;
 }

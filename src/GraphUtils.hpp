@@ -61,7 +61,7 @@ void logIntoGraphVizFormat(std::ostream& os, GraphList<V, E>& graph)
     os << "}" << std::endl;
 }
 
-constexpr auto MAXIMUM_WEIGHT = 50;
+constexpr auto MAXIMUM_WEIGHT = 5000;
 constexpr auto EPSILON = 0.0001;
 
 bool isCloseTo(double wanted, double val)
