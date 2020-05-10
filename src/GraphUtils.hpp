@@ -5,6 +5,12 @@
 #include <iostream>
 #include <string>
 
+template<typename T1, typename T2>
+std::ostream& operator<<(std::ostream& os, const std::tuple<T1, T2>& var)
+{
+    return os << std::get<0>(var) << ", " << std::get<1>(var);
+}
+
 template<typename V, typename E>
 void logGraph(GraphMatrix<V, E>& graph)
 {
