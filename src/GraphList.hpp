@@ -1,221 +1,193 @@
 #pragma once
 
-#include <algorithm>
-#include <functional>
-#include <iterator>
-
-#include <nostd/List.hpp>
 #include <nostd/Vector.hpp>
+#include <VoidType.hpp>
 
 template<typename VertexLabel, typename EdgeLabel>
 class GraphList
 {
 public:
-    struct EdgeData;
-    struct VertexData;
-
-    class Vertex;
-    class Edge;
-
-    struct VertexData
+    struct Vertex
     {
-        VertexData(const VertexLabel& vLabel) :
-            data(vLabel)
-        {}
-
-        VertexData(VertexLabel&& vLabel) :
-            data(std::move(vLabel))
-        {}
-
-        VertexData(VertexData&& vert) = default;
-
-        VertexData() = delete;
-        VertexData(const VertexData& other) = delete;
-        void operator=(const VertexData& other) = delete;
-        void operator=(VertexData&& other) = delete;
-
-        /////////////////////////////////////////////////////
-
-        unsigned idx;
-        nostd::List<Edge> edgesOut;
-        nostd::List<Edge> edgesIn;
-        VertexLabel data;
-    };
-
-    class Vertex
-    {
-        using VertexDataIter = typename nostd::List<VertexData>::iterator;
-
     public:
-        explicit Vertex(VertexDataIter iter) : vertexData_(iter) {}
-
-        VertexLabel& operator*() const { return vertexData_->data; }
-        VertexLabel* operator->() const { return &vertexData_->data; }
-        bool operator==(const Vertex& other) const { return vertexData_ == other.vertexData_; }
-        bool operator!=(const Vertex& other) const { return vertexData_ != other.vertexData_; }
-
-        const nostd::List<Edge>& edgesOut() const { return vertexData_->edgesOut; }
-        const nostd::List<Edge>& edgesIn() const { return vertexData_->edgesIn; }
-        unsigned getIdx() const { return vertexData_->idx; }
+        Vertex(const VertexLabel data) :
+            data_(data)
+        {}
 
         friend class GraphList<VertexLabel, EdgeLabel>;
 
     protected:
-        VertexDataIter vertexData_;
+        nostd::Vector<unsigned> edgesOut_;
+        nostd::Vector<unsigned> edgesIn_;
+        VertexLabel data_;
     };
 
-    struct EdgeData
+    struct Edge
     {
-        EdgeData(Vertex _from, Vertex _to, const EdgeLabel& eLabel) :
-            from(_from), to(_to), data(eLabel)
-        {}
-
-        EdgeData(Vertex _from, Vertex _to, EdgeLabel&& eLabel) :
-            from(_from), to(_to), data(std::move(eLabel))
-        {}
-
-        EdgeData(EdgeData&& edge) = default;
-
-        EdgeData() = delete;
-        EdgeData(const Edge& edge) = delete;
-        void operator=(const Edge& edge) = delete;
-        void operator=(Edge&& edge) = delete;
-
-        ///////////////////////////////////////////////
-
-        Vertex from;
-        Vertex to;
-        EdgeLabel data;
-    };
-
-    class Edge
-    {
-        using EdgeDataIter = typename nostd::List<EdgeData>::iterator;
-
     public:
-        explicit Edge(EdgeDataIter iter) : edgeData_(iter) {}
-
-        EdgeLabel& operator*() const { return edgeData_->data; }
-        EdgeLabel* operator->() const { return &edgeData_->data; }
-
-        Vertex from() const { return edgeData_->from; }
-        Vertex to() const { return edgeData_->to; }
+        Edge(unsigned from, unsigned to, const EdgeLabel& data) :
+            from_(from),
+            to_(to),
+            data_(data)
+        {}
 
         friend class GraphList<VertexLabel, EdgeLabel>;
 
     protected:
-        EdgeDataIter edgeData_;
+        unsigned from_, to_;
+        EdgeLabel data_;
     };
 
-    Vertex addVertex(const VertexLabel& vLabel)
+    /////////////////////////////////////////////////////////////////
+
+    unsigned addVertex(const VertexLabel& vLabel)
     {
         vertices_.emplace_back(vLabel);
-        return initLastVertex_();
+        return vertices_.size() - 1;
     }
 
-    Vertex addVertex(VertexLabel&& vLabel)
+    unsigned addEdge(unsigned from, unsigned to, const EdgeLabel& edge)
     {
-        vertices_.emplace_back(std::move(vLabel));
-        return initLastVertex_();
+        edges_.emplace_back(from, to, edge);
+        return edges_.size() - 1;
     }
 
-    Edge addEdge(Vertex from, Vertex to, const EdgeLabel& eLabel)
+    /////////////////////////////////////////////////////////////////
+
+    const VertexLabel& getVertex(unsigned vertex) const
     {
-        edges_.emplace_back(from, to, eLabel);
-        return initLastEdge_();
+        return vertices_[vertex].data_;
     }
 
-    Edge addEdge(Vertex from, Vertex to, EdgeLabel&& eLabel)
+    const EdgeLabel& getEdge(unsigned edge) const
     {
-        edges_.emplace_back(from, to, std::move(eLabel));
-        return initLastEdge_();
+        return edges_[edge].data_;
     }
 
-    void removeEdge(Edge edge)
+    /////////////////////////////////////////////////////////////////
+
+    const nostd::Vector<unsigned>& getEdgesOut(unsigned vertex) const
     {
-        auto edgePointsToSameObj = [&](const auto& otherEdge) { return edge.edgeData_ == otherEdge.edgeData_; };
-        edge.from().vertexData_->edgesOut.remove_first(edgePointsToSameObj);
-        edge.to().vertexData_->edgesIn.remove_first(edgePointsToSameObj);
-
-        edges_.erase(edge.edgeData_);
+        return vertices_[vertex].edgesOut_;
     }
-    /*
-    void removeVertex(Vertex vertex)
+
+    const nostd::Vector<unsigned>& getEdgesIn(unsigned vertex) const
     {
-        nostd::Vector<Edge> edgesToRemove;
-        std::copy(vertex.edgesIn().begin(), vertex.edgesIn().end(), std::back_inserter(edgesToRemove));
-        std::copy(vertex.edgesOut().begin(), vertex.edgesOut().end(), std::back_inserter(edgesToRemove));
-
-        for (auto edge : edgesToRemove)
-            removeEdge(edge);
-
-        vertices_.erase(vertex.vertexData_);
+        return vertices_[vertex].edgesIn_;
     }
-    */
 
-    nostd::Vector<Vertex> allVertices()
+    unsigned getVertexFrom(unsigned edge) const
     {
-        // c++ doesn't have transform iterator or lazy ranges, sooooo
-        nostd::Vector<Vertex> result;
-
-        for (auto it = vertices_.begin(); it != vertices_.end(); ++it)
-            result.emplace_back(it);
-
-        return result;
+        return edges_[edge].from_;
     }
 
-    unsigned verticesSize()
+    unsigned getVertexTo(unsigned edge) const
+    {
+        return edges_[edge].to_;
+    }
+
+protected:
+    nostd::Vector<Vertex> vertices_;
+    nostd::Vector<Edge> edges_;
+};
+
+template<typename EdgeLabel>
+class GraphList<VoidType, EdgeLabel>
+{
+public:
+    struct Vertex
+    {
+    public:
+        friend class GraphList<VoidType, EdgeLabel>;
+
+    protected:
+        nostd::Vector<unsigned> edgesOut_;
+        nostd::Vector<unsigned> edgesIn_;
+    };
+
+    struct Edge
+    {
+    public:
+        Edge(unsigned from, unsigned to, const EdgeLabel& data) :
+            from_(from),
+            to_(to),
+            data_(data)
+        {}
+
+        friend class GraphList<VoidType, EdgeLabel>;
+
+    protected:
+        unsigned from_, to_;
+        EdgeLabel data_;
+    };
+
+    /////////////////////////////////////////////////////////////////
+
+    unsigned addVertex()
+    {
+        vertices_.emplace_back();
+        return vertices_.size() - 1;
+    }
+
+    template<typename T>
+    unsigned addVertex(T&&)
+    {
+        return addVertex();
+    }
+
+    unsigned addEdge(unsigned from, unsigned to, const EdgeLabel& edge)
+    {
+        edges_.emplace_back(from, to, edge);
+
+        auto idx = edges_.size() - 1;
+        vertices_[from].edgesOut_.push_back(idx);
+        vertices_[to].edgesIn_.push_back(idx);
+
+        return idx;
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    unsigned getVertex(unsigned vertex) const
+    {
+        return vertex;
+    }
+
+    const EdgeLabel& getEdge(unsigned edge) const
+    {
+        return edges_[edge].data_;
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    const nostd::Vector<unsigned>& getEdgesOut(unsigned vertex) const
+    {
+        return vertices_[vertex].edgesOut_;
+    }
+
+    const nostd::Vector<unsigned>& getEdgesIn(unsigned vertex) const
+    {
+        return vertices_[vertex].edgesIn_;
+    }
+
+    unsigned getVertexFrom(unsigned edge) const
+    {
+        return edges_[edge].from_;
+    }
+
+    unsigned getVertexTo(unsigned edge) const
+    {
+        return edges_[edge].to_;
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    unsigned verticesSize() const
     {
         return vertices_.size();
     }
 
-    nostd::Vector<Edge> allEdges()
-    {
-        nostd::Vector<Edge> result;
-
-        for (auto it = edges_.begin(); it != edges_.end(); ++it)
-            result.emplace_back(it);
-
-        return result;
-    }
-
-    unsigned edgesSize()
-    {
-        return edges_.size();
-    }
-
-    std::optional<Edge> isEdgeBetween(Vertex from, Vertex to)
-    {
-        auto found =  std::find_if(from.edgesOut().begin(), from.edgesOut().end(),
-            [&](const auto& edge)
-            {
-                return edge.to() == to;
-            });
-
-        if (found == from.edgesOut().end())
-            return std::nullopt;
-
-        return *found;
-    }
-
 protected:
-    Vertex initLastVertex_()
-    {
-        auto lastVertex = std::prev(vertices_.end());
-        lastVertex->idx = vertices_.size() - 1;
-        return Vertex{lastVertex};
-    }
-
-    Edge initLastEdge_()
-    {
-        auto lastEdge = std::prev(edges_.end());
-
-        lastEdge->from.vertexData_->edgesOut.push_back(Edge{lastEdge});
-        lastEdge->to.vertexData_->edgesIn.push_back(Edge{lastEdge});
-
-        return Edge{lastEdge};
-    }
-
-    nostd::List<VertexData> vertices_;
-    nostd::List<EdgeData> edges_;
+    nostd::Vector<Vertex> vertices_;
+    nostd::Vector<Edge> edges_;
 };

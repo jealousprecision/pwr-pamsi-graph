@@ -16,6 +16,15 @@ void logGraph(GraphMatrix<V, E>& graph)
 }
 
 template<typename V, typename E>
+void logGraph(GraphList<V, E>& graph)
+{
+    for (unsigned vertex = 0, n = graph.verticesSize(); vertex < n; ++vertex)
+        for (auto edge : graph.getEdgesOut(vertex))
+            std::cout << graph.getVertex(vertex) << " -("
+                << graph.getEdge(edge) << ")-> " << graph.getVertex(graph.getVertexTo(edge)) << std::endl;
+}
+
+template<typename V, typename E>
 void logIntoGraphVizFormat(std::ostream& os, GraphMatrix<V, E>& graph)
 {
     os << "digraph G {\n";
@@ -27,6 +36,21 @@ void logIntoGraphVizFormat(std::ostream& os, GraphMatrix<V, E>& graph)
                     << graph.getVertex(from) << "\" -> \""
                     << graph.getVertex(to) << "\""
                     << " [label=\"" << *edge << "\"]\n";
+
+    os << "}" << std::endl;
+}
+
+template<typename V, typename E>
+void logIntoGraphVizFormat(std::ostream& os, GraphList<V, E>& graph)
+{
+    os << "digraph G{\n";
+
+    for (unsigned vertex = 0, n = graph.verticesSize(); vertex < n; ++vertex)
+        for (auto edge : graph.getEdgesOut(vertex))
+            os << "\t\""
+                << graph.getVertex(vertex) << "\" -> \""
+                << graph.getVertex(graph.getVertexTo(edge)) << "\" "
+                << "[label=\"" << graph.getEdge(edge) << "\"]\n";
 
     os << "}" << std::endl;
 }

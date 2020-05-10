@@ -15,6 +15,7 @@ GraphList<std::tuple<unsigned, int>, int> getGraphFromDijkstraOutput(
     const nostd::Vector<int>& vertexIdxToCost,
     const nostd::Vector<int>& vertexIdxToParentIdx)
 {
+    /*
     GraphList<std::tuple<unsigned, int>, int> result;
 
     for (unsigned idx = 0; idx < vertexIdxToCost.size(); ++idx)
@@ -27,6 +28,7 @@ GraphList<std::tuple<unsigned, int>, int> getGraphFromDijkstraOutput(
             result.addEdge(vertices[vertexIdxToParentIdx[idx]], vertices[idx], 0);
 
     return result;
+    */
 }
 
 template<typename Iter, typename Comp>
