@@ -109,6 +109,17 @@ public:
         return vertices_.size();
     }
 
+    unsigned edgesSize() const
+    {
+        return edges_.size();
+    }
+
+    void clear()
+    {
+        vertices_.clear();
+        edges_.clear();
+    }
+
 protected:
     nostd::Vector<Vertex> vertices_;
     nostd::Vector<Edge> edges_;
@@ -225,6 +236,11 @@ public:
     unsigned verticesSize() const
     {
         return vertices_.size();
+    }
+
+    unsigned edgesSize() const
+    {
+        return edges_.size();
     }
 
     void clear()

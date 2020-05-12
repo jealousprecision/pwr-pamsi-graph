@@ -35,7 +35,13 @@ public:
     List(List<T>&& other);
 
     List& operator=(const List<T>& other) = delete;
-    List& operator=(List<T>&& other) = delete;
+
+    List& operator=(List<T>&& other)
+    {
+        std::swap(front_, other.front_);
+        std::swap(end_, other.end_);
+        std::swap(size_, other.size_);
+    }
 
     ~List();
 

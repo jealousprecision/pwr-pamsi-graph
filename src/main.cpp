@@ -34,25 +34,26 @@ public:
             GraphType graph(vertices_);
             fillGraph(graph, density_);
 
-            auto start = std::chrono::high_resolution_clock::now();
+            auto start = std::chrono::steady_clock::now();
             auto result = Dijkstra(graph, 0);
-	        auto end = std::chrono::high_resolution_clock::now();
+	        auto end = std::chrono::steady_clock::now();
 
-            double msTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+            double msTime = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / pow(10, 6);
             testTimes_.push_back(msTime);
         }
     }
 
     const auto& getTimes() const { return testTimes_; }
+    auto extractTimes() const { return std::move(testTimes_); }
 
 protected:
     unsigned tests_, vertices_;
     double density_;
 
-    nostd::Vector<double> testTimes_;
+    nostd::Vector<double> testTimes_;  // in ms
 };
 
-void runTests()
+void runTests(bool shouldSpaceOutCategories=false)
 {
     unsigned vertices[] = {10, 50, 100, 500, 1000};
     double densities[] = {0.25, 0.5, 0.75, 1.0};
@@ -68,7 +69,7 @@ void runTests()
 
             Test<GraphMatrix<VoidType, unsigned>> test(100, vertNo, density);
             test();
-            testNameAndTime.push_back(std::make_tuple(testName, test.getTimes()));
+            testNameAndTime.push_back(std::make_tuple(testName, test.extractTimes()));
         }
     }
 
@@ -89,7 +90,17 @@ void runTests()
     csv << "SEP=,\n";
     for (auto& [testName, testTimes] : testNameAndTime)
     {
-        csv << testName << ",";
+        if (shouldSpaceOutCategories)
+        {
+            std::string temp(testName);
+            std::replace(temp.begin(), temp.end(), ' ', ',');
+            csv << temp << ",";
+        }
+        else
+        {
+            csv << testName << ",";
+        }
+
         std::copy(testTimes.begin(), testTimes.end(), std::ostream_iterator<double>(csv, ", "));
         csv << "\n";
     }
@@ -97,11 +108,13 @@ void runTests()
 
 int main()
 {
-    const char* prompt = "Option: ";
-    const char* menu = "0. Exit\n1. Run tests\n2. Load file\n3. Save Dijkstra output\n";
+    std::srand(std::time(nullptr));
 
-    std::optional<GraphList<VoidType, unsigned>> graph;
-    std::optional<GraphList<std::tuple<unsigned, unsigned>, int>> dijkstraTree;
+    const char* prompt = "Option: ";
+    const char* menu = "0. Exit\n1. Run tests\n2. Load file\n3. Save Dijkstra output\n4. Save Dijkstra output in graphviz format\n";
+
+    GraphList<VoidType, unsigned> graph;
+    GraphList<std::tuple<unsigned, unsigned>, int> dijkstraTree;
     unsigned input;
 
     std::cout << menu << prompt;
@@ -112,7 +125,7 @@ int main()
             case 0:
                 goto exitProgram;
             case 1:
-                runTests();
+                runTests(true);
                 break;
             case 2:
             {
@@ -121,29 +134,35 @@ int main()
                 std::cin >> filename;
 
                 std::ifstream inputFile(filename);
-                graph.emplace();
-                loadGraph(inputFile, *graph);
+                graph.clear();
+                auto startVertex = loadGraph2Way(inputFile, graph);
 
-                auto result = Dijkstra(*graph, 0);
-                dijkstraTree.emplace(getGraphFromDijsktraOutput(std::get<0>(result), std::get<1>(result)));
+                auto result = Dijkstra(graph, startVertex);
+                dijkstraTree.clear();
+                dijkstraTree = getGraphFromDijsktraOutput(std::get<0>(result), std::get<1>(result));
 
                 break;
             }
             case 3:
             {
-                if (!dijkstraTree.has_value())
-                {
-                    std::cerr << "Error: no file loaded\n";
-                    break;
-                }
-
                 std::cout << "Filename: ";
                 std::string filename;
                 std::cin >> filename;
 
                 std::ofstream outFile(filename);
                 outFile << "vertex\tcost\tparents\n";
-                saveDijkstraTreeInPwrFormat(outFile, *dijkstraTree, 0, nostd::Vector<unsigned>());
+                saveDijkstraTreeInPwrFormat(outFile, dijkstraTree, 0, nostd::Vector<unsigned>());
+
+                break;
+            }
+            case 4:
+            {
+                std::cout << "Filename: ";
+                std::string filename;
+                std::cin >> filename;
+
+                std::ofstream outFile(filename);
+                logIntoGraphVizFormat(outFile, dijkstraTree);
 
                 break;
             }

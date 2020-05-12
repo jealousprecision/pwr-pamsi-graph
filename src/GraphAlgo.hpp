@@ -34,10 +34,12 @@ auto Dijkstra(GraphMatrix<V, E>& graph, unsigned source) -> std::tuple<nostd::Ve
     nostd::Vector<unsigned> idxToCost(graph.verticesSize(), infinity);
     nostd::Vector<int> idxToParent(graph.verticesSize(), -1);
     nostd::Vector<bool> traversedVertices(graph.verticesSize(), false);
+    auto traversedVerticesSum = 0u;
+    auto vSize = graph.verticesSize();
 
     idxToCost[source] = 0;
 
-    while (!std::all_of(traversedVertices.begin(), traversedVertices.end(), [](auto el){return el;}))
+    while (traversedVerticesSum != vSize)
     {
         int from = pickMin(idxToCost, traversedVertices);
 
@@ -45,15 +47,14 @@ auto Dijkstra(GraphMatrix<V, E>& graph, unsigned source) -> std::tuple<nostd::Ve
             break;  // disconnected graph
 
         traversedVertices[from] = true;
-        for (unsigned to = 0; to < graph.verticesSize(); ++to)
+        traversedVerticesSum++;
+        for (unsigned to = 0; to < vSize; ++to)
         {
             if (auto* edge = graph.getEdgeBetween(from, to))
             {
-                auto current = idxToCost[from] + *edge;
-
-                if (current < idxToCost[to])
+                if (idxToCost[from] + *edge < idxToCost[to])
                 {
-                    idxToCost[to] = current;
+                    idxToCost[to] = idxToCost[from] + *edge;
                     idxToParent[to] = from;
                 }
             }
@@ -61,35 +62,6 @@ auto Dijkstra(GraphMatrix<V, E>& graph, unsigned source) -> std::tuple<nostd::Ve
     }
 
     return std::make_tuple(std::move(idxToCost), std::move(idxToParent));
-}
-
-template<typename Iter, typename Comp>
-void push_down(Iter rootIt, size_t size, size_t idx, Comp comp)
-{
-    auto largest = rootIt;
-    auto largestIdx = idx;
-    auto end = std::next(rootIt, size);
-
-    auto lIt = 2 * idx + 1 < size ? std::next(rootIt, idx + 1) : end;
-    auto rIt = 2 * idx + 2 < size ? std::next(lIt, 1) : end;
-
-    if (lIt != end && comp(*largest, *lIt))
-    {
-        largest = lIt;
-        largestIdx = 2 * idx + 1;
-    }
-
-    if (rIt != end && comp(*largest, *rIt))
-    {
-        largest = rIt;
-        largestIdx = 2 * idx + 2;
-    }
-
-    if (largestIdx != idx)
-    {
-        std::swap(*largest, *rootIt);
-        push_down(largest, size, largestIdx, comp);
-    }
 }
 
 struct VertexWeight
@@ -119,7 +91,7 @@ public:
 
         heap_[root].weight = 0;
 
-        swapInHeap_(0, root);
+        swapInHeap_(0, root);  // make min heap
     }
 
     VertexWeight extract()
@@ -142,13 +114,12 @@ public:
         auto heapPos = idxToPositionInHeap_[vertex];
         heap_[heapPos].weight = weight;
 
-        if (shouldPushUp_(heapPos))
+        if (heapPos < size())
         {
-            pushUpHeap_(heapPos);
-        }
-        else if (shouldPushDown_(heapPos))
-        {
-            pushDownHeap_(heapPos);
+            if (shouldPushUp_(heapPos))
+                pushUpHeap_(heapPos);
+            else if (shouldPushDown_(heapPos))
+                pushDownHeap_(heapPos);
         }
     }
 
@@ -215,28 +186,11 @@ protected:
         if (idx == 0)
             return;
 
-        idx = (idx - 1) / 2;  // return to parent
-        auto smallest = heap_[idx].weight;
-        auto smallestIdx = idx;
-        auto leftIdx = 2 * idx + 1;
-        auto rightIdx = 2 * idx + 2;
-
-        if (heap_[leftIdx].weight < smallest)
+        unsigned parentIdx = (idx - 1) / 2;
+        if (heap_[idx].weight < heap_[parentIdx].weight)
         {
-            smallest = heap_[leftIdx].weight;
-            smallestIdx = leftIdx;
-        }
-
-        if (heap_[rightIdx].weight < smallest)
-        {
-            smallest = heap_[rightIdx].weight;
-            smallestIdx = rightIdx;
-        }
-
-        if (smallestIdx != idx)
-        {
-            swapInHeap_(smallestIdx, idx);
-            pushUpHeap_(idx);
+            swapInHeap_(idx, parentIdx);
+            pushUpHeap_(parentIdx);
         }
     }
 

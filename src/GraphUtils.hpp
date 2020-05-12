@@ -49,7 +49,7 @@ void logIntoGraphVizFormat(std::ostream& os, GraphMatrix<V, E>& graph)
 template<typename V, typename E>
 void logIntoGraphVizFormat(std::ostream& os, GraphList<V, E>& graph)
 {
-    os << "digraph G{\n";
+    os << "digraph G {\n";
 
     for (unsigned vertex = 0, n = graph.verticesSize(); vertex < n; ++vertex)
         for (auto edge : graph.getEdgesOut(vertex))
@@ -61,7 +61,7 @@ void logIntoGraphVizFormat(std::ostream& os, GraphList<V, E>& graph)
     os << "}" << std::endl;
 }
 
-constexpr auto MAXIMUM_WEIGHT = 1000;
+constexpr auto MAXIMUM_WEIGHT = 5000;
 
 bool isCloseTo(double wanted, double val)
 {
@@ -142,7 +142,7 @@ struct VertLabelDefaultTranslator
 template<
     typename GraphType,
     typename IdxToVertexLabelTranslator = VertLabelDefaultTranslator>
-void loadGraph(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator translate = VertLabelDefaultTranslator())
+unsigned loadGraph(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator translate = VertLabelDefaultTranslator())
 {
     unsigned nOfEdges, nOfVertices, treeStartVertex;
     is >> nOfEdges >> nOfVertices >> treeStartVertex;
@@ -153,12 +153,14 @@ void loadGraph(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator tr
     int startVertex, endVertex, weight;
     while (is >> startVertex >> endVertex >> weight)
         graph.addEdge(startVertex, endVertex, weight);
+
+    return treeStartVertex;
 }
 
 template<
     typename GraphType,
     typename IdxToVertexLabelTranslator = VertLabelDefaultTranslator>
-void loadGraph2Way(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator translate = VertLabelDefaultTranslator())
+unsigned loadGraph2Way(std::istream& is, GraphType& graph, IdxToVertexLabelTranslator translate = VertLabelDefaultTranslator())
 {
     unsigned nOfEdges, nOfVertices, treeStartVertex;
     is >> nOfEdges >> nOfVertices >> treeStartVertex;
@@ -172,4 +174,6 @@ void loadGraph2Way(std::istream& is, GraphType& graph, IdxToVertexLabelTranslato
         graph.addEdge(startVertex, endVertex, weight);
         graph.addEdge(endVertex, startVertex, weight);
     }
+
+    return treeStartVertex;
 }
