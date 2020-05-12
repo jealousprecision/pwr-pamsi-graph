@@ -3,6 +3,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(pamsi-graph VERSION 1.0)
 
+find_package(Boost REQUIRED)
+
 add_executable(graph
     ./src/main.cpp)
 
