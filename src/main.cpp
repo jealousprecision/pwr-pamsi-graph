@@ -26,13 +26,12 @@
 #include <boost/algorithm/algorithm.hpp>
 
 using namespace boost;
-using Graph = adjacency_list<listS, vecS, directedS, no_property, property<edge_weight_t, unsigned>>;
+using Graph = adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, unsigned>>;
 
 template<typename BoostGraphType, typename E>
 void fillGraphs(BoostGraphType& boostGraph, GraphList<VoidType, E>& myGraph, unsigned vertices)
 {
     const unsigned nOfEdges = vertices * (vertices - 1) * 0.75;
-    //constexpr unsigned max_weight = 5000u;
 
     Matrix<bool> adjacencyMatrix(vertices, vertices);  // acount so no parralel edges are made
     adjacencyMatrix.fill(false);
@@ -58,8 +57,6 @@ void fillGraphs(BoostGraphType& boostGraph, GraphList<VoidType, E>& myGraph, uns
 template<typename BoostGraphType, typename GraphType>
 void fillFullGraphs(BoostGraphType& boostGraph, GraphType& myGraph, unsigned vertices)
 {
-    constexpr unsigned max_weight = 5000u;
-
     for (unsigned src = 0; src < vertices; ++src)
     {
         for (unsigned dest = 0; dest < vertices; ++dest)
@@ -108,8 +105,8 @@ void test()
     {
         Graph boostGraph(nOfVerts);
         MyGraphType myGraph(nOfVerts);
-        //fillGraphs(boostGraph, myGraph, nOfVerts);
-        fillFullGraphs(boostGraph, myGraph, nOfVerts);
+        fillGraphs(boostGraph, myGraph, nOfVerts);
+        //fillFullGraphs(boostGraph, myGraph, nOfVerts);
 
         std::vector<unsigned> boostIdxToCost(nOfVerts);
         auto source = *vertices(boostGraph).first;
