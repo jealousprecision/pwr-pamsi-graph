@@ -32,9 +32,10 @@ template<typename BoostGraphType, typename E>
 void fillGraphs(BoostGraphType& boostGraph, GraphList<VoidType, E>& myGraph, unsigned vertices)
 {
     const unsigned nOfEdges = vertices * (vertices - 1) * 0.75;
-    constexpr unsigned max_weight = 5000u;
+    //constexpr unsigned max_weight = 5000u;
 
-    Matrix<bool> adjacencyMatrix(vertices, vertices, false);  // acount so no parralel edges are made
+    Matrix<bool> adjacencyMatrix(vertices, vertices);  // acount so no parralel edges are made
+    adjacencyMatrix.fill(false);
 
     for (unsigned i = 0; i < nOfEdges; ++i)
     {
@@ -42,11 +43,13 @@ void fillGraphs(BoostGraphType& boostGraph, GraphList<VoidType, E>& myGraph, uns
         do {
             src = std::rand() % vertices;
             dest = std::rand() % vertices;
-        } while (!adjacencyMatrix(src, dest));
+        } while (adjacencyMatrix(src, dest));
 
         adjacencyMatrix(src, dest) = true;
 
-        auto weight = std::rand() % max_weight;
+        unsigned weight = RandomSingleton::rand();
+        if (weight < 0) throw std::runtime_error("minus weight");
+
         add_edge(src, dest, weight, boostGraph);
         myGraph.addEdge(src, dest, weight);
     }
@@ -64,7 +67,8 @@ void fillFullGraphs(BoostGraphType& boostGraph, GraphType& myGraph, unsigned ver
             if (src == dest)
                 continue;
 
-            unsigned weight = std::rand() % max_weight;
+            unsigned weight = RandomSingleton::rand();
+            if (weight < 0) throw std::runtime_error("minus weight");
 
             add_edge(src, dest, weight, boostGraph);
             myGraph.addEdge(src, dest, weight);
@@ -80,12 +84,14 @@ void fillGraphs(BoostGraphType& boostGraph, GraphMatrix<VoidType, E>& myGraph, u
 
     for (unsigned i = 0; i < nOfEdges; ++i)
     {
-        unsigned src, dest, weight;
+        unsigned src, dest;
         do {
             src = std::rand() % vertices;
             dest = std::rand() % vertices;
-            weight = std::rand() % max_weight;
         } while (myGraph.getEdgeBetween(src, dest));
+
+        unsigned weight = RandomSingleton::rand();
+        if (weight < 0) throw std::runtime_error("minus weight");
 
         add_edge(src, dest, weight, boostGraph);
         myGraph.addEdge(src, dest, weight);
@@ -102,9 +108,8 @@ void test()
     {
         Graph boostGraph(nOfVerts);
         MyGraphType myGraph(nOfVerts);
-        fillGraphs(boostGraph, myGraph, nOfVerts);
-        //fillFullGraphs(boostGraph, myGraph, nOfVerts);
-
+        //fillGraphs(boostGraph, myGraph, nOfVerts);
+        fillFullGraphs(boostGraph, myGraph, nOfVerts);
 
         std::vector<unsigned> boostIdxToCost(nOfVerts);
         auto source = *vertices(boostGraph).first;
@@ -125,6 +130,12 @@ void test()
         if (!passed)
         {
             std::cout << "Error: idxToCost not equal" << std::endl;
+            for (auto el : boostIdxToCost)
+                std::cout << el << ", ";
+            std::cout << std::endl;
+            for (auto el : myIdxToCost)
+                std::cout << el << ", ";
+            std::cout << std::endl;
             return;
         }
 

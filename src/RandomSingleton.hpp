@@ -1,16 +1,38 @@
 #pragma once
 
+#include <iostream>
 #include <random>
 
 class RandomSingleton
 {
-public:
-    static double rand()
+    struct RandomImpl
     {
-        static std::random_device rd;
-        static std::mt19937 mt(rd());
-        static std::normal_distribution<double> dist(2500, 1500);
+        RandomImpl() :
+            mt(rd()),
+            dist(2500, 1000)
+        {}
 
-        return dist(mt);
+        double operator()()
+        {
+            return dist(mt);
+        }
+
+        std::random_device rd;
+        std::mt19937 mt;
+        std::normal_distribution<double> dist;
+    };
+
+public:
+    static unsigned rand()
+    {
+        static RandomImpl randImpl;
+
+        int ret;
+        do {
+            ret = randImpl();
+        } while(ret < 0);
+
+        //std::cout << "Alive! " << ret << std::endl;
+        return ret;
     }
 };
