@@ -17,6 +17,7 @@
 #include <GraphMatrix.hpp>
 #include <GraphUtils.hpp>
 #include <GraphAlgo.hpp>
+#include <RandomSingleton.hpp>
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
