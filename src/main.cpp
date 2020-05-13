@@ -30,24 +30,51 @@ using Graph = adjacency_list<listS, vecS, directedS, no_property, property<edge_
 template<typename BoostGraphType, typename E>
 void fillGraphs(BoostGraphType& boostGraph, GraphList<VoidType, E>& myGraph, unsigned vertices)
 {
-    const unsigned nOfEdges = vertices * (vertices - 1) / 2;
-    constexpr unsigned max_weight = 1000u;
+    const unsigned nOfEdges = vertices * (vertices - 1) * 0.75;
+    constexpr unsigned max_weight = 5000u;
+
+    Matrix<bool> adjacencyMatrix(vertices, vertices, false);  // acount so no parralel edges are made
 
     for (unsigned i = 0; i < nOfEdges; ++i)
     {
-        auto src = std::rand() % vertices;
-        auto dest = std::rand() % vertices;
-        auto weight = std::rand() % max_weight;
+        unsigned src, dest;
+        do {
+            src = std::rand() % vertices;
+            dest = std::rand() % vertices;
+        } while (!adjacencyMatrix(src, dest));
 
+        adjacencyMatrix(src, dest) = true;
+
+        auto weight = std::rand() % max_weight;
         add_edge(src, dest, weight, boostGraph);
         myGraph.addEdge(src, dest, weight);
+    }
+}
+
+template<typename BoostGraphType, typename GraphType>
+void fillFullGraphs(BoostGraphType& boostGraph, GraphType& myGraph, unsigned vertices)
+{
+    constexpr unsigned max_weight = 5000u;
+
+    for (unsigned src = 0; src < vertices; ++src)
+    {
+        for (unsigned dest = 0; dest < vertices; ++dest)
+        {
+            if (src == dest)
+                continue;
+
+            unsigned weight = std::rand() % max_weight;
+
+            add_edge(src, dest, weight, boostGraph);
+            myGraph.addEdge(src, dest, weight);
+        }
     }
 }
 
 template<typename BoostGraphType, typename E>
 void fillGraphs(BoostGraphType& boostGraph, GraphMatrix<VoidType, E>& myGraph, unsigned vertices)
 {
-    const unsigned nOfEdges = vertices * (vertices - 1) / 2;
+    const unsigned nOfEdges = vertices * (vertices - 1) * 0.75;
     constexpr unsigned max_weight = 1000u;
 
     for (unsigned i = 0; i < nOfEdges; ++i)
@@ -75,14 +102,21 @@ void test()
         Graph boostGraph(nOfVerts);
         MyGraphType myGraph(nOfVerts);
         fillGraphs(boostGraph, myGraph, nOfVerts);
+        //fillFullGraphs(boostGraph, myGraph, nOfVerts);
 
 
         std::vector<unsigned> boostIdxToCost(nOfVerts);
         auto source = *vertices(boostGraph).first;
+
+        auto start = std::chrono::steady_clock::now();
         dijkstra_shortest_paths(boostGraph, source, distance_map(boostIdxToCost.data()));
+        auto end = std::chrono::steady_clock::now();
+        std::cout << "boost: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / pow(10, 6) << std::endl;
 
-
+        start = std::chrono::steady_clock::now();
         auto res = Dijkstra(myGraph, 0);
+        end = std::chrono::steady_clock::now();
+        std::cout << "my: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / pow(10, 6) << std::endl;
         const auto& myIdxToCost = std::get<0>(res);
 
 
