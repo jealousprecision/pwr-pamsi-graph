@@ -18,7 +18,6 @@
 #include <GraphMatrix.hpp>
 #include <GraphUtils.hpp>
 #include <GraphAlgo.hpp>
-#include <RandomSingleton.hpp>
 
 template<typename GraphType>
 class Test

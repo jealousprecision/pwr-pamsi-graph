@@ -93,17 +93,6 @@ public:
         return edges_[edge].to_;
     }
 
-    bool isEdgeBetween(unsigned srcVert, unsigned destVert)
-    {
-        const auto& edgesOut = vertices_[srcVert].edgesOut_;
-
-        return std::any_of(edgesOut.begin(), edgesOut.end(),
-            [&](auto edge)
-            {
-                return this->getVertexTo(edge) == destVert;
-            });
-    }
-
     unsigned verticesSize() const
     {
         return vertices_.size();
@@ -220,18 +209,104 @@ public:
         return edges_[edge].to_;
     }
 
-    bool isEdgeBetween(unsigned srcVert, unsigned destVert)
-    {
-        const auto& edgesOut = vertices_[srcVert].edgesOut_;
+    /////////////////////////////////////////////////////////////////
 
-        return std::any_of(edgesOut.begin(), edgesOut.end(),
-            [&](auto edge)
-            {
-                return getVertexTo(edge) == destVert;
-            });
+    unsigned verticesSize() const
+    {
+        return vertices_.size();
     }
 
+    unsigned edgesSize() const
+    {
+        return edges_.size();
+    }
+
+    void clear()
+    {
+        vertices_.clear();
+        edges_.clear();
+    }
+
+protected:
+    nostd::Vector<Vertex> vertices_;
+    nostd::Vector<Edge> edges_;
+};
+
+template<typename VertexLabel>
+class GraphList<VertexLabel, VoidType>
+{
+    struct Vertex
+    {
+    public:
+        Vertex(const VertexLabel data) :
+            data_(data)
+        {}
+
+        friend class GraphList<VertexLabel, VoidType>;
+
+    protected:
+        nostd::Vector<unsigned> edgesOut_;
+        nostd::Vector<unsigned> edgesIn_;
+        VertexLabel data_;
+    };
+
+    struct Edge
+    {
+    public:
+        Edge(unsigned from, unsigned to) :
+            from_(from),
+            to_(to)
+        {}
+
+        friend class GraphList<VertexLabel, VoidType>;
+
+    protected:
+        unsigned from_, to_;
+    };
+
     /////////////////////////////////////////////////////////////////
+
+    unsigned addVertex(const VertexLabel& vLabel)
+    {
+        vertices_.push_back(vLabel);
+        return vertices_.size() - 1;
+    }
+
+    unsigned addEdge(unsigned from, unsigned to)
+    {
+        edges_.push_back(Edge(from, to));
+
+        auto idx = edges_.size() - 1;
+        vertices_[from].edgesOut_.push_back(idx);
+        vertices_[to].edgesIn_.push_back(idx);
+
+        return idx;
+    }
+
+    const VertexLabel& getVertex(unsigned vertex) const
+    {
+        return vertices_[vertex].data_;
+    }
+
+    const nostd::Vector<unsigned>& getEdgesOut(unsigned vertex) const
+    {
+        return vertices_[vertex].edgesOut_;
+    }
+
+    const nostd::Vector<unsigned>& getEdgesIn(unsigned vertex) const
+    {
+        return vertices_[vertex].edgesIn_;
+    }
+
+    unsigned getVertexFrom(unsigned edge) const
+    {
+        return edges_[edge].from_;
+    }
+
+    unsigned getVertexTo(unsigned edge) const
+    {
+        return edges_[edge].to_;
+    }
 
     unsigned verticesSize() const
     {
